@@ -1,0 +1,8 @@
+{
+  "n_dogs": 10,
+  "n_days": 35,
+  "anomalies_injected": 3,
+  "true_positives": 3,
+  "false_positive_days": 59,
+  "recall": 1.0
+}

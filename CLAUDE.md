@@ -189,12 +189,12 @@ created_at timestamptz DEFAULT now()
 ## Fase actual de desenvolupament
 **P0 → P1 → P2 → P3 → P4 → P5 → P6**
 - [x] P0 — Setup repositori, CLAUDE.md, estructura
-- [ ] P1 — Firmware ESP32 (BLE + sensors)
-- [ ] P2 — App mòbil BLE → backend
-- [ ] P3 — Backend API (Fastify + Supabase schema)
-- [ ] P4 — Pipeline dades (mètriques + baseline)
-- [ ] P5 — Dashboard web complet
-- [ ] P6 — Integració + tests + validació gos real
+- [x] P1 — Firmware ESP32 (BLE + sensors) — FreeRTOS dual-core, buffer circular 720 pkts
+- [x] P2 — App mòbil BLE → backend — React Native Expo, 4 pantalles, BLE sync, Zustand
+- [x] P3 — Backend API (Fastify + Supabase schema) — ingest, dogs, metrics, alerts, RLS
+- [x] P4 — Pipeline dades (mètriques + baseline) — v1.1 amb filtres anti-fals-positius
+- [x] P5 — Dashboard web complet — DashboardReal.tsx connectat a Supabase + Realtime
+- [ ] P6 — Integració + tests end-to-end + validació gos real
 
 ---
 

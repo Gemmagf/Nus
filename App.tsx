@@ -2,16 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { SlideLayout } from './components/SlideLayout';
 import { DashboardDemo } from './components/DashboardDemo';
+import { DashboardReal } from './src/components/DashboardReal';
 import { HarnessIllustration } from './components/HarnessIllustration';
-import { 
-  Heart, ShieldAlert, CheckCircle, Database, Smartphone, 
-  Activity, ArrowRight, Dog, Search, Users, 
+import {
+  Heart, ShieldAlert, CheckCircle, Database, Smartphone,
+  Activity, ArrowRight, Dog, Search, Users,
   Calendar, Layers, TrendingUp, BarChart3, Presentation,
-  Zap, Brain, Bluetooth, MousePointer2
+  Zap, Brain, Bluetooth, MousePointer2, LayoutDashboard, ChevronLeft
 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showRealDashboard, setShowRealDashboard] = useState(false);
 
   const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
   const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
@@ -387,17 +389,49 @@ const App: React.FC = () => {
     </SlideLayout>
   ];
 
+  // ── Mode Dashboard Real ────────────────────────────────────
+  if (showRealDashboard) {
+    return (
+      <div className="h-screen w-screen bg-slate-100 flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100 shadow-sm">
+          <button
+            onClick={() => setShowRealDashboard(false)}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-900 text-sm transition"
+          >
+            <ChevronLeft size={16} /> Tornada presentació
+          </button>
+          <span className="text-slate-300">|</span>
+          <span className="text-sm font-semibold text-slate-700">Ernest — Dashboard Real (Supabase)</span>
+          <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">LIVE</span>
+        </div>
+        <div className="flex-1 p-4 overflow-hidden">
+          <DashboardReal />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen w-screen bg-[#f8fafc] selection:bg-teal-100 selection:text-teal-900">
       <div className="transition-all duration-500 h-full">
         {slides[currentSlide]}
       </div>
-      
+
+      {/* Botó accés Dashboard Real */}
+      <button
+        onClick={() => setShowRealDashboard(true)}
+        className="fixed top-4 right-4 flex items-center gap-2 bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-blue-700 transition z-50"
+        title="Obre el dashboard connectat a Supabase"
+      >
+        <LayoutDashboard size={14} /> Dashboard Real
+      </button>
+
       {/* Slide Indicator Bar */}
       <div className="fixed bottom-0 left-0 right-0 h-2 flex gap-1.5 px-12 pb-6 z-50">
         {slides.map((_, i) => (
-          <button 
-            key={i} 
+          <button
+            key={i}
             className={`flex-1 rounded-full transition-all duration-500 overflow-hidden relative group ${i === currentSlide ? 'bg-teal-500' : 'bg-slate-200'}`}
             onClick={() => setCurrentSlide(i)}
             title={`Slide ${i + 1}`}
