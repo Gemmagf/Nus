@@ -262,6 +262,59 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 ---
 
+## 📅 2026-04-14 — P4+: Anàlisi passejades + detecció pipi/caca + demo dual-view
+
+### Objectiu
+Ampliar el pipeline amb detecció de sessions de passeig i esdeveniments fisiològics (pipi/caca) per poder alertar el propietari si l'animal fa menys necessitats del normal. Crear una demo visual amb vista propietari i vista veterinari.
+
+### Fitxers creats
+
+#### Base de dades (SQL migration)
+- `backend/supabase/migrations/002_walks_bathroom.sql`
+  - Taula `walk_sessions`: sessions de moviment sostingut amb durada, distància estimada, passes, velocitat, simetria, activitat
+  - Taula `bathroom_events`: episodis fisiològics amb tipus (pipi/caca/unknown), durada aturada, posture_score, gyro_lateral, acc_z_delta, walk_session_id
+  - Columnes noves a `daily_metrics`: walk_count, walk_total_min, walk_total_m, steps_total, pipi_count, caca_count
+  - Vista `daily_summary`: afegeix hydration_level (molt baix/baix/normal/alt) i digestive_status (cap/normal-baix/normal/elevat)
+  - RLS actiu a totes les taules noves
+
+#### Pipeline Python
+- `pipeline/features/compute_walks.py`
+  - `detect_walks(dog_id, date, readings, weight_kg)` → `List[WalkSession]`
+  - Magnitud IMU (mag = |acc| - 1g), suavitzat rolling 5 lectures
+  - Llindar activitat WALK_THRESHOLD=0.12g, durada mínima MIN_WALK_MIN=3min
+  - Pauses dins sessió fins MAX_GAP_S=60s es toleren (gos s'atura breu)
+  - Detecció passes via pics acc_z > mitja+1.2σ, refractori 0.3s
+  - Longitud pas per pes: <10kg→0.25m, 10-25kg→0.40m, >25kg→0.55m
+  - `compute_daily_walk_summary(walks)` per a daily_metrics
+
+- `pipeline/features/compute_bathroom.py`
+  - `detect_bathroom_events(dog_id, date, readings, walk_periods)` → `List[BathroomEvent]`
+  - Pipi: aturada 12-95s + pic giroscopi lateral >25°/s (aixecar pota, mascles) o aturada curta sense flexió (femelles)
+  - Caca: aturada 28-125s + acc_z delta <-0.06g sostingut >8s (flexió dorsal)
+  - Score de confiança per cada detecció, mínim 0.65 per reportar
+  - `check_bathroom_alerts()`: pipi=0→urgent, pipi<P10→warning, caca=0 dos dies→warning, caca>P90×1.5→warning (possible diarrea)
+
+#### Demo visual (sense dependències externes)
+- `ernest_demo.html` — Pure vanilla JS/HTML/CSS
+  - Toggle d'escenari: **Gos sa** (3 passejades, 5 pipis, 2 caques) ↔ **Anomalia** (1 passeig curt, 1 pipi, 0 caques → alertes actives)
+  - Toggle de vista: **Dashboard** ↔ **App mòbil**
+  - **Vista Propietari**: emoji wellness, targetes passeig/pipi/caca vs baseline, timeline passejades del dia, visualització events fisiològics amb dots de colors
+  - **Vista Veterinari**: graella 8 stats, detall sessions passeig (hora, durada, passes, km/h, simetria), 6 gràfics SVG (activitat, simetria+llindar, minuts passejades, pipi/caca, temperatura, anomaly score)
+  - **App mòbil**: 3 mockups de telèfon costat a costat (Nus, Lluna, Bruno) amb BLE bar, wellness, llista passejades, pipi/caca, mètriques, tab bar
+
+### Decisions tècniques
+- Detecció sense GPS: distància estimada a partir de passes × longitud_pas (funció del pes)
+- Detecció fisiològica per senyals indirectes IMU: no cal sensor específic afegit
+- Demo en HTML pur per poder obrir sense instal·lar res (eines comercials / demo a clients)
+- Confiança mínima 0.65 per evitar falsos positius en condicions d'activitat ambigua
+
+### Problemes resolts en aquesta sessió
+- Demo inicial amb Recharts CDN fallava (blanc total): reescrita en vanilla JS/SVG pur
+- Git `.git/index.lock` al sandbox Linux: resolt via còpia a /tmp + git bundle + update-ref
+- Dues vistes (propietari/veterinari) ben diferenciades: propietari simple i emocional, veterinari clínic i complet
+
+---
+
 ## 🔜 Properes passes — P6: Integració + tests + validació real
 
 ### Tasques P6

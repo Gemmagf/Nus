@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ernest — Demo interactiva</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#1a1a2e;overflow:hidden;height:100vh}
+
+/* Top bar */
+.topbar{background:#1e293b;display:flex;align-items:center;gap:10px;padding:9px 16px;flex-shrink:0;flex-wrap:wrap}
+.logo{color:white;font-weight:900;font-size:15px;display:flex;align-items:center;gap:7px}
+.logo-sq{background:#1565C0;width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:white}
+.pill-grp{display:flex;background:#334155;border-radius:20px;padding:3px;gap:2px}
+.pill{border:none;background:none;color:#94a3b8;padding:4px 13px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
+.pill.p-ok   {background:#166534;color:#dcfce7}
+.pill.p-alert{background:#991b1b;color:#fee2e2}
+.pill.p-on   {background:#1565C0;color:white}
+.ml{margin-left:auto}
+.sep{width:1px;height:20px;background:#334155}
+
+/* Layout */
+.layout{display:flex;height:calc(100vh - 46px);overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:200px;background:#1a1a2e;display:flex;flex-direction:column;flex-shrink:0}
+.sb-top{padding:14px 12px 8px;border-bottom:1px solid #ffffff10}
+.sb-logo{color:white;font-weight:800;font-size:14px;display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.dog-list{display:flex;flex-direction:column;gap:1px}
+.dog-btn{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:#94a3b8;border:none;background:none;text-align:left;width:100%;transition:.15s}
+.dog-btn:hover,.dog-btn.act{background:#ffffff10;color:white}
+.dog-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sb-nav{padding:10px 6px 0}
+.sb-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#475569;padding:8px 6px 4px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:#94a3b8;border:none;background:none;width:100%;text-align:left;transition:.15s}
+.sb-item:hover,.sb-item.act{background:#ffffff10;color:white}
+.device-box{margin:auto 10px 12px;background:#ffffff08;border:1px solid #ffffff12;border-radius:10px;padding:10px;font-size:10px;color:#94a3b8}
+.device-box .lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#475569;margin-bottom:7px}
+.drow{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.bat-wrap{flex:1;height:4px;background:#334155;border-radius:2px;overflow:hidden}
+.bat-fill{height:100%;border-radius:2px}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* Dog tabs */
+.dog-tabs{display:flex;gap:7px;padding:10px 16px;background:white;border-bottom:1px solid #e0e7ef;align-items:center;flex-wrap:wrap}
+.dog-tab{padding:5px 13px;border-radius:18px;font-size:12px;font-weight:600;border:1.5px solid #e0e7ef;cursor:pointer;background:white;color:#1a1a2e;transition:.15s}
+.dog-tab:hover,.dog-tab.act{background:#1565C0;border-color:#1565C0;color:white}
+
+/* Content */
+.content{padding:16px;flex:1}
+
+/* Dog header */
+.dog-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.dog-name-big{font-size:18px;font-weight:800}
+.dog-sub-txt{font-size:11px;color:#607D8B;margin-top:2px}
+.status-badge{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:18px;font-size:12px;font-weight:700}
+.badge-ok{background:#dcfce7;color:#166534}
+.badge-alert{background:#fee2e2;color:#991b1b}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.anim{animation:pulse 1.5s infinite}
+
+/* SECTION TABS (Propietari / Vet) */
+.view-tabs{display:flex;gap:6px;padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e0e7ef}
+.view-tab{padding:6px 16px;border-radius:18px;font-size:12px;font-weight:700;border:1.5px solid #e0e7ef;cursor:pointer;background:white;color:#607D8B;transition:.15s}
+.view-tab:hover{border-color:#1565C0;color:#1565C0}
+.view-tab.act{background:#1565C0;border-color:#1565C0;color:white}
+
+/* Alerts */
+.alerts-box{margin-bottom:14px}
+.alerts-ttl{font-size:12px;font-weight:700;margin-bottom:7px}
+.alert-row{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;margin-bottom:5px;border-left:4px solid}
+.alert-row.urgent{background:#fff1f2;border-color:#B71C1C}
+.alert-row.warning{background:#fff7ed;border-color:#E65100}
+.alert-body{flex:1}
+.alert-sev{font-size:10px;font-weight:700;margin-bottom:2px}
+.alert-msg{font-size:12px;line-height:1.4}
+.alert-meta{font-size:10px;color:#607D8B;margin-top:3px}
+.alert-x{border:none;background:none;font-size:16px;cursor:pointer;color:#94a3b8;line-height:1;padding:0 2px;flex-shrink:0}
+
+/* Range */
+.range-row{display:flex;gap:6px;margin-bottom:14px}
+.range-btn{padding:4px 12px;border-radius:18px;font-size:11px;font-weight:700;border:1.5px solid #e0e7ef;cursor:pointer;background:white;color:#1a1a2e;transition:.15s}
+.range-btn.act{background:#1565C0;border-color:#1565C0;color:white}
+
+/* ═══════════════ OWNER VIEW ═══════════════ */
+.owner-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.owner-card{background:white;border-radius:14px;padding:16px;border:1px solid #e0e7ef;text-align:center}
+.owner-emoji{font-size:32px;margin-bottom:6px}
+.owner-val{font-size:22px;font-weight:900;margin-bottom:2px}
+.owner-lbl{font-size:11px;color:#607D8B;font-weight:600}
+.owner-sub{font-size:10px;color:#94a3b8;margin-top:3px}
+.owner-status{display:inline-block;margin-top:5px;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.ok-bg{background:#dcfce7;color:#166534}
+.warn-bg{background:#fff7ed;color:#b45309}
+.bad-bg{background:#fee2e2;color:#991b1b}
+
+/* Timeline passejades */
+.walks-section{margin-bottom:14px}
+.walks-ttl{font-size:12px;font-weight:700;margin-bottom:8px;color:#1a1a2e}
+.walk-item{display:flex;align-items:center;gap:10px;background:white;border-radius:10px;padding:10px 12px;margin-bottom:5px;border:1px solid #e0e7ef}
+.walk-icon{font-size:20px;flex-shrink:0}
+.walk-time{font-size:12px;font-weight:700;color:#1a1a2e;min-width:90px}
+.walk-stats{display:flex;gap:12px;flex-wrap:wrap}
+.walk-stat{font-size:11px;color:#607D8B}
+.walk-stat strong{color:#1a1a2e}
+.walk-bar{flex:1;height:6px;background:#e0e7ef;border-radius:3px;overflow:hidden;min-width:60px}
+.walk-bar-fill{height:100%;border-radius:3px;background:#1565C0}
+
+/* Bathroom summary */
+.bathroom-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.bathroom-card{background:white;border-radius:12px;padding:14px;border:1px solid #e0e7ef;display:flex;align-items:center;gap:12px}
+.bathroom-icon{font-size:28px;flex-shrink:0}
+.bathroom-info{flex:1}
+.bathroom-count{font-size:24px;font-weight:900}
+.bathroom-lbl{font-size:11px;color:#607D8B;font-weight:600}
+.bathroom-baseline{font-size:10px;color:#94a3b8;margin-top:2px}
+.bathroom-dots{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.bdot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px}
+.bdot-ok{background:#dcfce7}
+.bdot-miss{background:#f1f5f9;border:1.5px dashed #94a3b8}
+.bdot-extra{background:#fff7ed}
+
+/* ═══════════════ VET VIEW ═══════════════ */
+.vet-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:white;border-radius:13px;padding:14px;border:1px solid #e0e7ef}
+.stat-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#607D8B;margin-bottom:5px}
+.stat-val{font-size:24px;font-weight:800}
+.stat-unit{font-size:11px;color:#607D8B;font-weight:400}
+.stat-trend{font-size:10px;font-weight:700;margin-top:3px}
+.trend-up{color:#2E7D32}.trend-dn{color:#B71C1C}.trend-ne{color:#607D8B}
+.wellness-card-vet{background:white;border-radius:13px;padding:14px;border:2px solid;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ws-num{font-size:38px;font-weight:900;line-height:1}
+.ws-lbl{font-size:11px;font-weight:700;margin-top:3px}
+
+/* Charts */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.chart-card{background:white;border-radius:13px;padding:14px;border:1px solid #e0e7ef}
+.chart-title{font-size:12px;font-weight:700;margin-bottom:10px;color:#1a1a2e}
+svg.chart{width:100%;height:130px;overflow:visible}
+
+/* Walk details vet */
+.walk-detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.walk-detail-card{background:white;border-radius:12px;padding:12px;border:1px solid #e0e7ef;border-top:3px solid #1565C0}
+.wdc-time{font-size:11px;font-weight:700;color:#607D8B;margin-bottom:6px}
+.wdc-stat{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #f1f5f9}
+.wdc-stat:last-child{border:none}
+.wdc-lbl{color:#607D8B}.wdc-val{font-weight:700;color:#1a1a2e}
+
+/* Phone view */
+.mobile-view{flex:1;background:#0f172a;display:flex;align-items:center;justify-content:center;gap:28px;padding:16px;flex-wrap:wrap}
+.phone-name-lbl{color:#94a3b8;font-size:11px;font-weight:700;margin-bottom:8px;text-align:center}
+.phone{width:195px;background:#1a1a2e;border-radius:36px;padding:8px;box-shadow:0 20px 60px #00000060,0 0 0 1px #ffffff15}
+.screen{background:#f0f4f8;border-radius:28px;overflow:hidden}
+.notch{background:#1a1a2e;height:20px;display:flex;align-items:center;justify-content:center}
+.notch-bar{width:52px;height:4px;background:#334155;border-radius:2px}
+.ph-ble{padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
+.ph-ble-lbl{color:white;font-weight:700;font-size:11px}
+.ph-ble-sub{color:rgba(255,255,255,.7);font-size:9px;margin-top:1px}
+.ph-ble-btn{background:rgba(255,255,255,.2);border:none;color:white;padding:3px 8px;border-radius:9px;font-size:9px;font-weight:600}
+.ph-body{padding:9px}
+.ph-sec{font-size:8px;font-weight:700;color:#607D8B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ph-ws{background:white;border-radius:11px;padding:11px;text-align:center;border:2px solid;margin-bottom:7px}
+.ph-ws-num{font-size:34px;font-weight:900;line-height:1}
+.ph-ws-lbl{font-size:10px;font-weight:700;margin-top:2px}
+.ph-ws-dog{font-size:8px;color:#607D8B;margin-top:1px}
+.ph-metrics{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:7px}
+.ph-m{background:white;border-radius:8px;padding:7px;border-left:2px solid}
+.ph-mv{font-size:13px;font-weight:800}
+.ph-ml{font-size:7px;color:#607D8B;font-weight:600;text-transform:uppercase;margin-top:1px}
+.ph-walks{background:white;border-radius:10px;padding:9px;margin-bottom:6px}
+.ph-walk-row{display:flex;justify-content:space-between;align-items:center;font-size:9px;padding:2px 0}
+.ph-bath{background:white;border-radius:10px;padding:9px;margin-bottom:6px;display:flex;gap:10px}
+.ph-bath-item{flex:1;text-align:center}
+.ph-bath-n{font-size:16px;font-weight:900}
+.ph-bath-l{font-size:8px;color:#607D8B;font-weight:600}
+.ph-alert{background:#fff1f2;border-radius:8px;padding:7px;border-left:2px solid #B71C1C;margin-bottom:5px}
+.ph-alert-s{font-size:8px;font-weight:700;color:#B71C1C;margin-bottom:1px}
+.ph-alert-m{font-size:8px;line-height:1.3}
+.ph-tabs{display:flex;background:white;border-top:1px solid #e0e7ef}
+.ph-tab{flex:1;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:7px;color:#607D8B}
+.ph-tab.act{color:#1565C0}
+.ph-tab-ic{font-size:12px}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;height:100vh">
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="logo"><div class="logo-sq">E</div>Ernest</div>
+  <div class="sep"></div>
+  <div class="pill-grp">
+    <button class="pill" id="btnOk"    onclick="setScenario('ok')">✓ Gos sa</button>
+    <button class="pill" id="btnAlert" onclick="setScenario('alert')">⚠ Anomalia</button>
+  </div>
+  <div class="sep"></div>
+  <div class="pill-grp ml">
+    <button class="pill" id="btnDash" onclick="setMainView('dashboard')">💻 Dashboard</button>
+    <button class="pill" id="btnApp"  onclick="setMainView('app')">📱 App mòbil</button>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-top">
+      <div class="sb-logo"><div class="logo-sq">E</div>Ernest</div>
+      <div class="dog-list" id="sbDogs"></div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec">Monitorització</div>
+      <button class="sb-item act">⚡ Pacients actius</button>
+      <button class="sb-item">📋 Historial</button>
+      <button class="sb-item">👤 Propietaris</button>
+      <button class="sb-item">⚙️ Configuració</button>
+    </div>
+    <div class="device-box">
+      <div class="lbl">Dispositiu actiu</div>
+      <div class="drow"><div class="dog-dot" id="sb-dot" style="background:#22c55e"></div><span id="sb-dev">Ernest-Nus · En línia</span></div>
+      <div class="drow"><span>🔋</span><div class="bat-wrap"><div class="bat-fill" id="sb-bat" style="width:78%;background:#22c55e"></div></div><span id="sb-bat-txt" style="min-width:24px;text-align:right">78%</span></div>
+    </div>
+  </div>
+
+  <!-- Main dashboard -->
+  <div class="main" id="viewDash">
+    <!-- View tabs -->
+    <div class="view-tabs">
+      <button class="view-tab" id="tabOwner" onclick="setPersonView('owner')">🏠 Vista Propietari</button>
+      <button class="view-tab" id="tabVet"   onclick="setPersonView('vet')">🩺 Vista Veterinari</button>
+    </div>
+    <!-- Dog tabs -->
+    <div class="dog-tabs" id="dogTabs"></div>
+    <!-- Content -->
+    <div class="content" id="dashContent"></div>
+  </div>
+
+  <!-- Main app mobile -->
+  <div class="mobile-view" id="viewApp" style="display:none"></div>
+
+</div><!-- /layout -->
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const DOGS = [
+  {id:0, name:'Nus',   breed:'Labrador Retriever', age:'9a', weight:'32kg', weight_kg:32, bat:78,  online:true,  sex:'M'},
+  {id:1, name:'Lluna', breed:'Border Collie',       age:'4a', weight:'18kg', weight_kg:18, bat:45,  online:true,  sex:'F'},
+  {id:2, name:'Bruno', breed:'Golden Retriever',    age:'7a', weight:'28kg', weight_kg:28, bat:12,  online:false, sex:'M'},
+];
+
+const WALKS_NORMAL = [
+  {time:'08:15', dur:22, dist:1480, steps:3700, pace:4.0, sym:93},
+  {time:'13:05', dur:12, dist: 780, steps:1950, pace:3.9, sym:91},
+  {time:'19:30', dur:18, dist:1210, steps:3025, pace:4.0, sym:94},
+];
+const WALKS_ANOM = [
+  {time:'08:20', dur: 8, dist: 420, steps:1050, pace:3.2, sym:71},
+];
+
+const BATH_NORMAL = { pipi:5, caca:2, pipi_base:'4–7', caca_base:'1–2', pipi_times:['08:18','10:32','13:08','16:45','20:12'], caca_times:['08:35','19:48'] };
+const BATH_ANOM   = { pipi:1, caca:0, pipi_base:'4–7', caca_base:'1–2', pipi_times:['08:22'], caca_times:[] };
+
+function rnd(n){return Math.random()*n}
+function genData(ndays, anom, base) {
+  return Array.from({length:ndays},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-(ndays-1-i));
+    const lbl=(d.getMonth()+1)+'/'+(d.getDate());
+    const isA=anom&&i>=ndays-5, drop=isA?(i-(ndays-5)):0;
+    return {
+      date:lbl,
+      act: isA?Math.max(8, base-30+drop*-5+rnd(5)):base+rnd(14)-7,
+      sym: isA?Math.max(42,93-drop*7+rnd(3)):91+rnd(7)-3,
+      rep: isA?Math.max(3,7.2-drop*0.5+rnd(0.5)):7+rnd(2)-1,
+      tmp: 38.3+(isA?drop*0.15:0)+rnd(0.3)-0.15,
+      ano: isA?Math.min(97,20+drop*18+rnd(8)):rnd(20),
+      wk:  isA?Math.max(0,3-drop):3,
+      wkm: isA?Math.max(0,52-drop*10):48+rnd(14)-7,
+      pip: isA?Math.max(0,5-drop*2):4+Math.round(rnd(3)),
+      ca:  isA?Math.max(0,2-drop):1+Math.round(rnd(1)),
+    };
+  });
+}
+const BASES=[68,83,71];
+
+function ws(d){
+  const a=Math.min(d.act/100,1)*35, s=(d.sym/100)*30, r=Math.min(d.rep/12,1)*20, t=Math.max(0,1-Math.abs(d.tmp-38.5)/1.5)*15;
+  return Math.round(a+s+r+t);
+}
+function wsc(s){return s>=80?'#2E7D32':s>=50?'#E65100':'#B71C1C'}
+function wsl(s){return s>=80?'Excel·lent':s>=60?'Bé':s>=40?'Atenció':'Alerta'}
+
+// Alerts
+const ALERTS_DATA = [
+  {id:1,sev:'urgent', met:'pipi_count',    msg:'Cap episodi de micció detectat avui (normal per a en Nus: 4–7/dia). Possible retenció urinària o deshidratació severa.',time:'fa 4h'},
+  {id:2,sev:'urgent', met:'symmetry_index',msg:'Simetria de marxa al 71% durant 3 dies consecutius. Possible coixesa o dolor articular posterior.',time:'fa 6h'},
+  {id:3,sev:'warning',met:'caca_count',    msg:'Cap deposició detectada en 2 dies (normal: 1–2/dia). Possible estrenyiment.',time:'fa 8h'},
+];
+
+// SVG charts
+function sparkline(vals,color,W,H,thr){
+  if(!vals.length)return'';
+  const min=Math.min(...vals),max=Math.max(...vals,thr||0)||1,range=max-min||1;
+  const step=W/(vals.length-1||1);
+  const pts=vals.map((v,i)=>[i*step,H-8-((v-min)/range)*(H-16)]);
+  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const fill=path+`L${(vals.length-1)*step},${H} L0,${H} Z`;
+  const id='g'+color.replace('#','')+(Math.random()*1000|0);
+  let thrSvg='';
+  if(thr!=null){const ty=H-8-((thr-min)/range)*(H-16);thrSvg=`<line x1="0" y1="${ty.toFixed(1)}" x2="${W}" y2="${ty.toFixed(1)}" stroke="#E65100" stroke-width="1" stroke-dasharray="4 3" opacity=".6"/>`;}
+  return`<svg class="chart" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity=".15"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${fill}" fill="url(#${id})"/><path d="${path}" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>${thrSvg}</svg>`;
+}
+function barChart(vals,W,H,thr){
+  const max=Math.max(...vals,thr||0,1);
+  const bw=Math.max(2,W/vals.length-2);
+  const bars=vals.map((v,i)=>{
+    const bh=Math.max(2,(v/max)*(H-12)),x=i*(W/vals.length)+(W/vals.length-bw)/2,y=H-12-bh;
+    const col=v>=70?'#B71C1C':v>=40?'#E65100':'#2E7D32';
+    return`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${col}" rx="2"/>`;
+  }).join('');
+  const ty=H-12-(thr/max)*(H-12);
+  return`<svg class="chart" viewBox="0 0 ${W} ${H}">${bars}<line x1="0" y1="${ty.toFixed(1)}" x2="${W}" y2="${ty.toFixed(1)}" stroke="#B71C1C" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/></svg>`;
+}
+
+// ── State ─────────────────────────────────────────────────────
+let scenario='ok', mainView='dashboard', personView='owner', dogIdx=0, days=30, closedAlerts=[];
+
+// ── Render ────────────────────────────────────────────────────
+function render(){
+  const dog=DOGS[dogIdx], anom=scenario==='alert'&&dogIdx===0;
+  const data=genData(days,anom,BASES[dogIdx]);
+  const last=data[data.length-1];
+  const score=ws(last), col=wsc(score);
+  const walks=anom?WALKS_ANOM:WALKS_NORMAL;
+  const bath=anom?BATH_ANOM:BATH_NORMAL;
+  const visAlerts=anom?ALERTS_DATA.filter(a=>!closedAlerts.includes(a.id)):[];
+
+  // Sidebar dogs
+  document.getElementById('sbDogs').innerHTML=DOGS.map((d,i)=>
+    `<button class="dog-btn${i===dogIdx?' act':''}" onclick="selDog(${i})">
+      <div class="dog-dot" style="background:${d.online?'#22c55e':'#475569'}"></div>${d.name}
+    </button>`).join('');
+
+  // Sidebar device
+  document.getElementById('sb-dev').textContent=`Ernest-${dog.name} · ${dog.online?'En línia':'Fora de línia'}`;
+  document.getElementById('sb-dot').style.background=dog.online?'#22c55e':'#475569';
+  const batEl=document.getElementById('sb-bat');
+  batEl.style.width=dog.bat+'%';
+  batEl.style.background=dog.bat<20?'#ef4444':dog.bat<50?'#f97316':'#22c55e';
+  document.getElementById('sb-bat-txt').textContent=dog.bat+'%';
+
+  // Dog tabs
+  document.getElementById('dogTabs').innerHTML=DOGS.map((d,i)=>
+    `<button class="dog-tab${i===dogIdx?' act':''}" onclick="selDog(${i})">🐕 ${d.name} ${d.online?'●':'○'}</button>`
+  ).join('');
+
+  if(mainView==='app'){renderApp(anom,dog,last,score,col,walks,bath,visAlerts);return;}
+
+  const W=400,H=130;
+  const actC=anom?'#ef4444':'#1565C0';
+
+  // Common header
+  const hdr=`
+    <div class="dog-hdr">
+      <div>
+        <div class="dog-name-big">${dog.name}</div>
+        <div class="dog-sub-txt">${dog.breed} · ${dog.age} · ${dog.weight} · ${dog.sex==='M'?'Mascle':'Femella'}</div>
+      </div>
+      <div class="status-badge ${visAlerts.length?'badge-alert anim':'badge-ok'}">
+        ${visAlerts.length?`⚠ ${visAlerts.length} alerta${visAlerts.length>1?'es':''} activa${visAlerts.length>1?'es':''}`:
+        '✓ Estat: Estable'}
+      </div>
+    </div>
+    ${visAlerts.length?`
+    <div class="alerts-box">
+      <div class="alerts-ttl">⚠ Alertes actives (${visAlerts.length})</div>
+      ${visAlerts.map(a=>`
+        <div class="alert-row ${a.sev}">
+          <div class="alert-body">
+            <div class="alert-sev" style="color:${a.sev==='urgent'?'#B71C1C':'#E65100'}">${a.sev==='urgent'?'🔴 URGENT':'🟠 AVÍS'}</div>
+            <div class="alert-msg">${a.msg}</div>
+            <div class="alert-meta">${a.met} · ${a.time}</div>
+          </div>
+          <button class="alert-x" onclick="closeAlert(${a.id})">×</button>
+        </div>`).join('')}
+    </div>`:''}`;
+
+  if(personView==='owner'){
+    // ── OWNER VIEW ──────────────────────────────────────────
+    const pipDots=Array.from({length:bath.pipi_base.split('–')[1]},(_,i)=>
+      `<div class="bdot ${i<bath.pipi?'ok-bg':i<bath.pipi+1?'miss-bg':'miss-bg'}">${i<bath.pipi?'💧':''}</div>`).join('');
+    const cacaDots=Array.from({length:3},(_,i)=>
+      `<div class="bdot ${i<bath.caca?'ok-bg':'miss-bg'}">${i<bath.caca?'💩':''}</div>`).join('');
+    const maxWalkM=Math.max(...WALKS_NORMAL.map(w=>w.dur));
+
+    document.getElementById('dashContent').innerHTML=hdr+`
+      <!-- Wellness + resum dia -->
+      <div class="owner-grid">
+        <div class="owner-card" style="border-top:3px solid ${col}">
+          <div class="owner-emoji">${score>=80?'😊':score>=50?'😐':'😟'}</div>
+          <div class="owner-val" style="color:${col}">${score}</div>
+          <div class="owner-lbl">Benestar avui</div>
+          <div class="owner-sub">${wsl(score)}</div>
+          <div class="owner-status ${score>=80?'ok-bg':score>=50?'warn-bg':'bad-bg'}">${wsl(score)}</div>
+        </div>
+        <div class="owner-card" style="border-top:3px solid #1565C0">
+          <div class="owner-emoji">🚶</div>
+          <div class="owner-val">${walks.length}</div>
+          <div class="owner-lbl">Passejades avui</div>
+          <div class="owner-sub">${walks.reduce((s,w)=>s+w.dur,0)} min · ${(walks.reduce((s,w)=>s+w.dist,0)/1000).toFixed(1)} km</div>
+          <div class="owner-status ${walks.length>=2?'ok-bg':walks.length>=1?'warn-bg':'bad-bg'}">${walks.length>=2?'Normal':walks.length===1?'Menys de l\'habitual':'Cap passejada'}</div>
+        </div>
+        <div class="owner-card" style="border-top:3px solid ${bath.pipi>=4?'#2E7D32':bath.pipi>=2?'#E65100':'#B71C1C'}">
+          <div class="owner-emoji">💧</div>
+          <div class="owner-val" style="color:${bath.pipi>=4?'#2E7D32':bath.pipi>=2?'#E65100':'#B71C1C'}">${bath.pipi} pipi${bath.pipi!==1?'s':''} · ${bath.caca} caca${bath.caca!==1?'ques':''}</div>
+          <div class="owner-lbl">Necessitats fisiològiques</div>
+          <div class="owner-sub">Normal: ${bath.pipi_base} pipis, ${bath.caca_base} caques</div>
+          <div class="owner-status ${bath.pipi>=4&&bath.caca>=1?'ok-bg':bath.pipi>=2||bath.caca>=1?'warn-bg':'bad-bg'}">${bath.pipi>=4&&bath.caca>=1?'Normal':bath.pipi===0||bath.caca===0?'Possible problema':'Per sota del normal'}</div>
+        </div>
+      </div>
+
+      <!-- Passejades timeline -->
+      <div class="walks-section">
+        <div class="walks-ttl">🐾 Passejades d'avui</div>
+        ${walks.map(w=>`
+          <div class="walk-item">
+            <div class="walk-icon">🚶</div>
+            <div>
+              <div class="walk-time">${w.time} · ${w.dur} min</div>
+              <div class="walk-stats">
+                <span class="walk-stat"><strong>${(w.dist/1000).toFixed(2)} km</strong></span>
+                <span class="walk-stat"><strong>${w.steps.toLocaleString()}</strong> passes</span>
+                <span class="walk-stat"><strong>${w.pace.toFixed(1)}</strong> km/h</span>
+                <span class="walk-stat">Simetria <strong style="color:${w.sym>=85?'#2E7D32':w.sym>=70?'#E65100':'#B71C1C'}">${w.sym}%</strong></span>
+              </div>
+            </div>
+            <div class="walk-bar" style="max-width:80px"><div class="walk-bar-fill" style="width:${Math.round(w.dur/maxWalkM*100)}%"></div></div>
+          </div>`).join('')}
+        ${walks.length===0?'<div style="background:white;border-radius:10px;padding:14px;text-align:center;color:#607D8B;font-size:13px">😔 Cap passejada registrada avui</div>':''}
+      </div>
+
+      <!-- Necessitats fisiològiques visual -->
+      <div class="bathroom-row">
+        <div class="bathroom-card" style="border-top:3px solid ${bath.pipi>=4?'#2E7D32':bath.pipi>=2?'#E65100':'#B71C1C'}">
+          <div class="bathroom-icon">💧</div>
+          <div class="bathroom-info">
+            <div class="bathroom-count" style="color:${bath.pipi>=4?'#2E7D32':bath.pipi>=2?'#E65100':'#B71C1C'}">${bath.pipi}×</div>
+            <div class="bathroom-lbl">Pipis detectats</div>
+            <div class="bathroom-baseline">Normal per a ${dog.name}: ${bath.pipi_base}/dia</div>
+            <div class="bathroom-dots">${bath.pipi_times.map(t=>`<div class="bdot ok-bg" title="${t}">💧</div>`).join('')}${Array.from({length:Math.max(0,7-bath.pipi)},()=>'<div class="bdot miss-bg"></div>').join('')}</div>
+            ${bath.pipi<2?`<div style="margin-top:6px;font-size:10px;font-weight:700;color:#B71C1C">⚠ Molt per sota del normal</div>`:''}
+          </div>
+        </div>
+        <div class="bathroom-card" style="border-top:3px solid ${bath.caca>=1?'#2E7D32':'#B71C1C'}">
+          <div class="bathroom-icon">💩</div>
+          <div class="bathroom-info">
+            <div class="bathroom-count" style="color:${bath.caca>=1?'#2E7D32':'#B71C1C'}">${bath.caca}×</div>
+            <div class="bathroom-lbl">Caques detectades</div>
+            <div class="bathroom-baseline">Normal per a ${dog.name}: ${bath.caca_base}/dia</div>
+            <div class="bathroom-dots">${bath.caca_times.map(t=>`<div class="bdot ok-bg" title="${t}">💩</div>`).join('')}${Array.from({length:Math.max(0,3-bath.caca)},()=>'<div class="bdot miss-bg"></div>').join('')}</div>
+            ${bath.caca===0?`<div style="margin-top:6px;font-size:10px;font-weight:700;color:#B71C1C">⚠ Cap deposició detectada</div>`:''}
+          </div>
+        </div>
+      </div>`;
+
+  } else {
+    // ── VET VIEW ──────────────────────────────────────────
+    document.getElementById('dashContent').innerHTML=hdr+`
+      <div class="range-row">
+        ${[7,14,30].map(d=>`<button class="range-btn${days===d?' act':''}" onclick="setDays(${d})">${d} dies</button>`).join('')}
+      </div>
+
+      <!-- Stats grid -->
+      <div class="vet-grid">
+        <div class="wellness-card-vet" style="border-color:${col}">
+          <div class="stat-title">Índex Benestar</div>
+          <div class="ws-num" style="color:${col}">${score}</div>
+          <div class="ws-lbl" style="color:${col}">${wsl(score)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Activitat</div>
+          <div class="stat-val">${last.act.toFixed(0)}<span class="stat-unit"> /100</span></div>
+          <div class="stat-trend ${anom?'trend-dn':'trend-up'}">${anom?'▼ 44% vs baseline':'▲ Rang normal'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Simetria marxa</div>
+          <div class="stat-val">${last.sym.toFixed(0)}<span class="stat-unit"> /100</span></div>
+          <div class="stat-trend ${anom?'trend-dn':'trend-up'}">${anom?'▼ Desequilibri 3 dies':'▲ Rang normal'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Repòs</div>
+          <div class="stat-val">${last.rep.toFixed(1)}<span class="stat-unit"> h</span></div>
+          <div class="stat-trend trend-ne">— Dins del rang</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Passejades (avui)</div>
+          <div class="stat-val">${walks.length}<span class="stat-unit"> sessions</span></div>
+          <div class="stat-trend ${walks.length>=2?'trend-up':'trend-dn'}">${walks.length>=2?'▲ Normal':'▼ Molt reduïdes'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Distància total</div>
+          <div class="stat-val">${(walks.reduce((s,w)=>s+w.dist,0)/1000).toFixed(2)}<span class="stat-unit"> km</span></div>
+          <div class="stat-trend trend-ne">Baseline: ~3.5 km/dia</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Miccions detectades</div>
+          <div class="stat-val" style="color:${bath.pipi>=4?'#2E7D32':bath.pipi<2?'#B71C1C':'#E65100'}">${bath.pipi}<span class="stat-unit"> /dia</span></div>
+          <div class="stat-trend ${bath.pipi>=4?'trend-up':'trend-dn'}">Baseline: ${bath.pipi_base}/dia</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Deposicions detectades</div>
+          <div class="stat-val" style="color:${bath.caca>=1?'#2E7D32':'#B71C1C'}">${bath.caca}<span class="stat-unit"> /dia</span></div>
+          <div class="stat-trend ${bath.caca>=1?'trend-up':'trend-dn'}">Baseline: ${bath.caca_base}/dia</div>
+        </div>
+      </div>
+
+      <!-- Walk detail vet -->
+      <div style="margin-bottom:14px">
+        <div class="walks-ttl" style="font-size:12px;font-weight:700;margin-bottom:8px">Detall de passejades — Anàlisi de marxa</div>
+        <div class="walk-detail-grid">
+          ${walks.map(w=>`
+            <div class="walk-detail-card">
+              <div class="wdc-time">🕐 ${w.time} — ${w.dur}min</div>
+              <div class="wdc-stat"><span class="wdc-lbl">Distància</span><span class="wdc-val">${(w.dist/1000).toFixed(2)} km</span></div>
+              <div class="wdc-stat"><span class="wdc-lbl">Passes</span><span class="wdc-val">${w.steps.toLocaleString()}</span></div>
+              <div class="wdc-stat"><span class="wdc-lbl">Velocitat</span><span class="wdc-val">${w.pace.toFixed(1)} km/h</span></div>
+              <div class="wdc-stat"><span class="wdc-lbl">Simetria</span><span class="wdc-val" style="color:${w.sym>=85?'#2E7D32':w.sym>=70?'#E65100':'#B71C1C'}">${w.sym}/100</span></div>
+            </div>`).join('')}
+          ${walks.length===0?'<div style="background:white;border-radius:12px;padding:14px;color:#607D8B;font-size:12px;text-align:center;border:1px solid #e0e7ef">Cap sessió de passeig registrada avui</div>':''}
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Activitat ${days}d <span style="font-size:9px;color:${actC}">●</span></div>
+          ${sparkline(data.map(d=>d.act),actC,W,H)}
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Simetria ${days}d — llindar 85</div>
+          ${sparkline(data.map(d=>d.sym),'#7B1FA2',W,H,85)}
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Passejades/dia + Minuts totals</div>
+          ${sparkline(data.map(d=>d.wkm),'#1565C0',W,H)}
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Necessitats fisiològiques/dia (💧caca💩)</div>
+          ${sparkline(data.map(d=>d.pip),'#0891b2',W,H,3)}
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Temperatura corporal superficial</div>
+          ${sparkline(data.map(d=>d.tmp),'#E65100',W,H,39)}
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Score d'anomalia (%) — alerta >70</div>
+          ${barChart(data.map(d=>d.ano),W,H,70)}
+        </div>
+      </div>`;
+  }
+}
+
+function renderApp(anom,dog,last,score,col,walks,bath,visAlerts){
+  document.getElementById('viewApp').innerHTML=DOGS.map((d,i)=>{
+    const isA=anom&&i===0;
+    const data2=genData(30,isA,BASES[i]);
+    const l=data2[data2.length-1], w2=ws(l), c2=wsc(w2);
+    const wks=isA?WALKS_ANOM:WALKS_NORMAL;
+    const ba=isA?BATH_ANOM:BATH_NORMAL;
+    return`<div>
+      <div class="phone-name-lbl">🐕 ${d.name}</div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"><div class="notch-bar"></div></div>
+          <div class="ph-ble" style="background:${d.online?'#2E7D32':'#607D8B'}">
+            <div><div class="ph-ble-lbl">${d.online?'● Connectat':'○ Fora de línia'}</div><div class="ph-ble-sub">Ernest-${d.name}</div></div>
+            <button class="ph-ble-btn">${d.online?'Desc.':'Connectar'}</button>
+          </div>
+          <div class="ph-body">
+            <div class="ph-sec">Benestar · Avui</div>
+            <div class="ph-ws" style="border-color:${c2}">
+              <div class="ph-ws-num" style="color:${c2}">${w2}</div>
+              <div class="ph-ws-lbl" style="color:${c2}">${wsl(w2)}</div>
+              <div class="ph-ws-dog">${d.name}</div>
+            </div>
+            ${isA&&visAlerts.length?`
+            <div class="ph-alert">
+              <div class="ph-alert-s">🔴 URGENT</div>
+              <div class="ph-alert-m">${visAlerts[0].msg.slice(0,70)}…</div>
+            </div>`:''}
+            <div class="ph-sec">Passejades avui</div>
+            <div class="ph-walks">
+              ${wks.length?wks.map(w=>`<div class="ph-walk-row"><span>🚶 ${w.time}</span><span style="color:#607D8B">${w.dur}min · ${(w.dist/1000).toFixed(1)}km</span></div>`).join('')
+              :'<div style="font-size:9px;color:#607D8B;text-align:center;padding:4px">Cap passejada avui 😔</div>'}
+            </div>
+            <div class="ph-sec">Necessitats del dia</div>
+            <div class="ph-bath">
+              <div class="ph-bath-item">
+                <div class="ph-bath-n" style="color:${ba.pipi>=4?'#2E7D32':ba.pipi<2?'#B71C1C':'#E65100'}">${ba.pipi}</div>
+                <div class="ph-bath-l">💧 Pipis</div>
+              </div>
+              <div style="width:1px;background:#e0e7ef"></div>
+              <div class="ph-bath-item">
+                <div class="ph-bath-n" style="color:${ba.caca>=1?'#2E7D32':'#B71C1C'}">${ba.caca}</div>
+                <div class="ph-bath-l">💩 Caques</div>
+              </div>
+            </div>
+            <div class="ph-sec">Mètriques</div>
+            <div class="ph-metrics">
+              <div class="ph-m" style="border-color:#1565C0"><div class="ph-mv">${l.act.toFixed(0)}<span style="font-size:8px;color:#607D8B">/100</span></div><div class="ph-ml">Activitat</div></div>
+              <div class="ph-m" style="border-color:#7B1FA2"><div class="ph-mv">${l.sym.toFixed(0)}<span style="font-size:8px;color:#607D8B">/100</span></div><div class="ph-ml">Simetria</div></div>
+              <div class="ph-m" style="border-color:#2E7D32"><div class="ph-mv">${l.rep.toFixed(1)}<span style="font-size:8px;color:#607D8B">h</span></div><div class="ph-ml">Repòs</div></div>
+              <div class="ph-m" style="border-color:#E65100"><div class="ph-mv">${l.tmp.toFixed(1)}<span style="font-size:8px;color:#607D8B">°C</span></div><div class="ph-ml">Temp</div></div>
+            </div>
+          </div>
+          <div class="ph-tabs">
+            ${[['🏠','Inici',true],['📊','Mètr.',false],['🔔','Alertes',false],['📡','Disp.',false]].map(([ic,lb,ac])=>
+              `<div class="ph-tab${ac?' act':''}"><span class="ph-tab-ic">${ic}</span>${lb}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Actions ───────────────────────────────────────────────────
+function setScenario(s){
+  scenario=s; closedAlerts=[];
+  document.getElementById('btnOk').className   ='pill'+(s==='ok'   ?' p-ok'   :'');
+  document.getElementById('btnAlert').className='pill'+(s==='alert'?' p-alert':'');
+  render();
+}
+function setMainView(v){
+  mainView=v;
+  document.getElementById('viewDash').style.display=v==='dashboard'?'flex':'none';
+  document.getElementById('viewApp').style.display =v==='app'      ?'flex':'none';
+  document.getElementById('btnDash').className='pill'+(v==='dashboard'?' p-on':'');
+  document.getElementById('btnApp').className ='pill'+(v==='app'      ?' p-on':'');
+  render();
+}
+function setPersonView(v){
+  personView=v;
+  document.getElementById('tabOwner').className='view-tab'+(v==='owner'?' act':'');
+  document.getElementById('tabVet').className  ='view-tab'+(v==='vet'  ?' act':'');
+  render();
+}
+function selDog(i){dogIdx=i;render();}
+function setDays(d){days=d;render();}
+function closeAlert(id){closedAlerts.push(id);render();}
+
+// ── Init ─────────────────────────────────────────────────────
+setScenario('ok');
+setMainView('dashboard');
+setPersonView('owner');
+</script>
+</body>
+</html>

@@ -142,6 +142,54 @@ is_read boolean DEFAULT false
 created_at timestamptz DEFAULT now()
 ```
 
+### Taula: walk_sessions (migration 002)
+```sql
+id bigserial PRIMARY KEY
+dog_id uuid REFERENCES dogs
+date date NOT NULL
+started_at timestamptz NOT NULL
+ended_at timestamptz NOT NULL
+duration_min real NOT NULL          -- minuts de passeig
+distance_m real                     -- metres estimats (passes × longitud_pas)
+steps integer                       -- passes estimades
+avg_pace_kmh real                   -- velocitat mitja (km/h)
+avg_symmetry real                   -- índex simetria mitja (0-100)
+avg_activity real                   -- magnitud IMU mitja normalitzada
+detection_confidence real DEFAULT 1.0
+pipeline_version text DEFAULT '1.1'
+created_at timestamptz DEFAULT now()
+```
+
+### Taula: bathroom_events (migration 002)
+```sql
+id bigserial PRIMARY KEY
+dog_id uuid REFERENCES dogs
+date date NOT NULL
+occurred_at timestamptz NOT NULL
+event_type text CHECK (event_type IN ('pipi','caca','unknown'))
+duration_s real NOT NULL            -- durada de l'aturada (s)
+posture_score real                  -- 0-1, 1=molt clar
+gyro_lateral real                   -- pic giroscopi lateral (aixecar pota)
+acc_z_delta real                    -- canvi acc_z (flexió dorsal)
+walk_session_id bigint REFERENCES walk_sessions(id)
+detection_confidence real DEFAULT 0.8
+pipeline_version text DEFAULT '1.1'
+created_at timestamptz DEFAULT now()
+```
+
+### Columnes afegides a daily_metrics (migration 002)
+```sql
+walk_count smallint        -- nº passejades detectades
+walk_total_min real        -- minuts totals caminant
+walk_total_m real          -- metres totals estimats
+steps_total integer        -- passes totals
+pipi_count smallint        -- nº episodis pipi detectats
+caca_count smallint        -- nº episodis caca detectats
+```
+
+### Vista: daily_summary
+Inclou `hydration_level` (molt baix/baix/normal/alt) i `digestive_status` (cap/normal-baix/normal/elevat) calculats a partir de pipi_count i caca_count.
+
 ---
 
 ## Eixos transversals (sempre presents)
@@ -186,6 +234,32 @@ created_at timestamptz DEFAULT now()
 
 ---
 
+## Algorismes de detecció (pipeline v1.1)
+
+### Detecció de passejades (compute_walks.py)
+- Magnitud IMU: `mag = sqrt(acc_x²+acc_y²+acc_z²) - 1g`, clipejat a 0
+- Llindar activitat: `WALK_THRESHOLD = 0.12g`
+- Durada mínima: `MIN_WALK_MIN = 3.0 min`
+- Pausa màxima dins sessió: `MAX_GAP_S = 60s`
+- Suavitzat: rolling mean 5 lectures (≈25s)
+- Comptar passes: pics acc_z > mitja + 1.2σ, refractori 0.3s
+- Longitud pas per pes: <10kg→0.25m, 10-25kg→0.40m, >25kg→0.55m
+
+### Detecció d'esdeveniments fisiològics (compute_bathroom.py)
+- Pipi: aturada 12-95s + pic giroscopi lateral >25°/s (indica aixecar pota)
+- Caca: aturada 28-125s + acc_z delta <-0.06g sostingut >8s (indica flexió dorsal)
+- Confiança mínima: 0.65 per reportar l'esdeveniment
+- Alertes: pipi=0 → urgent; pipi<P10 → warning; caca=0 dos dies → warning; caca>P90×1.5 → warning
+
+### Demo visual (ernest_demo.html)
+- Pure vanilla JS/HTML/CSS, sense dependencies externes
+- Vista Propietari: emoji wellness, comptes de passeig/pipi/caca, timeline visual
+- Vista Veterinari: graelles mètriques, sessions detallades, 6 gràfics SVG
+- Vista App Mòbil: 3 mockups de telèfon (Nus, Lluna, Bruno)
+- Escenari toggle: Gos sa ↔ Anomalia (1 pipi, cap caca, passeig curt)
+
+---
+
 ## Fase actual de desenvolupament
 **P0 → P1 → P2 → P3 → P4 → P5 → P6**
 - [x] P0 — Setup repositori, CLAUDE.md, estructura
@@ -194,6 +268,7 @@ created_at timestamptz DEFAULT now()
 - [x] P3 — Backend API (Fastify + Supabase schema) — ingest, dogs, metrics, alerts, RLS
 - [x] P4 — Pipeline dades (mètriques + baseline) — v1.1 amb filtres anti-fals-positius
 - [x] P5 — Dashboard web complet — DashboardReal.tsx connectat a Supabase + Realtime
+- [x] P4+ — Anàlisi passejades + detecció pipi/caca — compute_walks.py, compute_bathroom.py, SQL migration 002, demo dual-view
 - [ ] P6 — Integració + tests end-to-end + validació gos real
 
 ---
