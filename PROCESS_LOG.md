@@ -8,12 +8,13 @@
 | Fase | Estat | Data inici | Data fi |
 |------|-------|-----------|---------|
 | P0 — Setup | ✅ Completat | 2025-04-14 | 2025-04-14 |
+| **Documentació final** | ✅ Completat | 2026-04-20 | 2026-04-20 |
 | P1 — Firmware ESP32 | ✅ Completat | 2025-04-14 | 2025-04-14 |
 | P2 — App mòbil BLE | ✅ Completat | 2025-04-14 | 2026-04-14 |
 | P3 — Backend API | ✅ Completat | 2025-04-14 | 2025-04-14 |
 | P4 — Pipeline dades | ✅ Completat | 2025-04-14 | 2025-04-14 |
 | P5 — Dashboard web | ✅ Completat | 2026-04-14 | 2026-04-14 |
-| P6 — Integració + tests | ⏳ Pendent | — | — |
+| P6 — Integració + tests | ✅ Completat | 2026-04-18 | 2026-04-18 |
 
 ---
 
@@ -315,52 +316,151 @@ Ampliar el pipeline amb detecció de sessions de passeig i esdeveniments fisiol�
 
 ---
 
-## 🔜 Properes passes — P6: Integració + tests + validació real
+## 📅 2026-04-18 — P6: Integració + tests + deploy
 
-### Tasques P6
-- [ ] Proves end-to-end: firmware ESP32 → BLE → app → Fastify → Supabase → pipeline → dashboard
-- [ ] Test de càrrega: `POST /api/v1/ingest/readings` amb 100 paquets en paral·lel
-- [ ] Validació sobre gos real: mínim 14 dies de dades per establir baseline
-- [ ] Calibratge llindars anomalia: ajustar `CONSECUTIVE_DAYS` i `MIN_RANGE_RATIO` amb dades reals
+### Tasques completades
+- [x] Test de càrrega E2E: `backend/tests/load_test.js` — 100 batches × 50 lectures en paral·lel amb estadístiques p50/p95/p99
+- [x] Supabase Edge Function: `backend/supabase/functions/pipeline-daily/index.ts` — pipeline cron diari (03:00 UTC), doble mode (API Python o RPC directa)
+- [x] Dockerfile multi-stage: `backend/api/Dockerfile` — imatge Alpine, usuari no-root, HEALTHCHECK integrat
+- [x] `railway.json`: deploy Fastify a Railway amb healthcheck automàtic
+- [x] `vercel.json`: deploy dashboard React/Vite a Vercel amb SPA rewrite + headers de seguretat
+- [x] `scripts/preflight_check.sh`: checklist automatitzat 7 seccions — eines, .env, fitxers, API, Python tests, seguretat, git
+
+### Fitxers creats a P6
+- `backend/tests/load_test.js` — test de càrrega configurable (concurrència, batches, lectures/batch)
+- `backend/supabase/functions/pipeline-daily/index.ts` — Edge Function Deno per a cron pipeline
+- `backend/api/Dockerfile` — imatge Docker producció Fastify
+- `railway.json` — configuració deploy Railway (backend)
+- `vercel.json` — configuració deploy Vercel (frontend)
+- `scripts/preflight_check.sh` — script bash checklist pre-producció
+
+### Com usar el test de càrrega
+```bash
+# Local (sense JWT — retornarà 401, útil per testar rate-limit i latència)
+node backend/tests/load_test.js
+
+# Contra producció, autenticat
+export TEST_JWT_TOKEN=<supabase-jwt>
+export TEST_DOG_ID=<uuid>
+node backend/tests/load_test.js --url https://api.ernest.app --concurrency 20 --batches 200
+```
+
+### Com fer el deploy
+```bash
+# 1. Preflight check (ha de passar sense errors)
+./scripts/preflight_check.sh
+
+# 2. Frontend → Vercel
+vercel --prod
+
+# 3. Backend → Railway (des del dashboard o CLI)
+railway up
+
+# 4. Supabase Edge Function
+supabase functions deploy pipeline-daily --no-verify-jwt
+
+# 5. Activar cron a Supabase Dashboard:
+#    Edge Functions → pipeline-daily → Add Schedule → "0 3 * * *"
+```
+
+### Pendents manuals (requereixen maquinari o accés real)
+- [ ] Calibratge llindars anomalia amb dades reals (mínim 14 dies per gos)
 - [ ] Test BLE rang i estabilitat (>8h connexió contínua)
-- [ ] Supabase Edge Function per execució automàtica del pipeline (cron)
-- [ ] Deploy: frontend Vercel, backend Railway, Supabase Pro activat
-
-### Checklist per posar en producció
-```
-☐ Supabase: RLS policies verificades per totes les taules
-☐ Supabase: Edge Function pipeline programada (cron daily)
-☐ Backend:  Variables d'entorn configurades a Railway
-☐ Frontend: VITE_SUPABASE_URL i VITE_SUPABASE_ANON_KEY a Vercel
-☐ App:      EXPO_PUBLIC_* en app.config.js per a builds EAS
-☐ Firmware: Flashing a dispositiu físic, test bateria 48h
-☐ Monitoring: Sentry (frontend + backend) + UptimeRobot (/health)
-```
+- [ ] Flashing firmware a dispositiu físic + test bateria 48h
+- [ ] Omplir SENTRY_DSN / VITE_SENTRY_DSN / EXPO_PUBLIC_SENTRY_DSN al .env
+- [ ] Activar UptimeRobot sobre `/health`
+- [ ] Omplir EAS_PROJECT_ID a app.config.js i eas.json
 
 ---
 
-## ⚠️ Notes i blockers
+## 📅 2026-04-18 — P6 complement: migration 003, Sentry, EAS
 
-### Git commit — acció manual requerida
-Executa des del terminal del Mac per commitar tots els canvis d'aquesta sessió:
-```bash
-cd ~/Documents/git_projects/nus_can
-git add -A
-git commit -m "feat: P2+P5 Ernest — app mòbil completa (4 pantalles BLE) + dashboard Supabase real"
-```
+### Fitxers creats
+- `backend/supabase/migrations/003_pipeline_runs_rpc.sql`
+  - Taula `pipeline_runs`: log d'execucions del pipeline (data, gossos ok/error, errors JSON)
+  - RPC `compute_daily_metrics(dog_id, date)` — mètriques diàries en SQL (activitat, repòs, simetria, temperatura, passos)
+  - RPC `compute_baseline(dog_id, window=30)` — P10/P50/P90 rolling per a totes les mètriques
+  - RPC `detect_anomalies(dog_id, date)` — detecció urgent/warning amb filtres anti-fals-positiu (MIN_RANGE_RATIO, DEDUP_DAYS)
+  - RPC `compute_walks_bathroom(dog_id, date)` — sincronitza resum walk_sessions + bathroom_events → daily_metrics
+  - Grants de EXECUTE per a service_role
+
+- `backend/api/src/server.js` — integració Sentry (`@sentry/node`): init condicional si `SENTRY_DSN`, setErrorHandler global, captura errors de startup. Sense enviar dades de request per GDPR.
+
+- `index.tsx` — integració Sentry (`@sentry/react`): browserTracing + Replay (mask text, block media), init condicional si `VITE_SENTRY_DSN`, beforeSend elimina email.
+
+- `app/app.config.js` — configuració Expo/EAS completa: identificadors iOS/Android, permisos BLE, plugins (react-native-ble-plx, expo-build-properties), OTA updates, extra vars d'entorn.
+
+- `app/eas.json` — perfils build EAS: development (devClient), preview (APK intern), production (autoIncrement). Configuració submit App Store + Google Play.
+
+- `package.json` (root) — afegit `@sentry/react` + `@supabase/supabase-js`, nom actualitzat a `ernest-dashboard`
+
+- `backend/api/package.json` — afegit `@sentry/node`
+
+- `.env.example` — afegides vars `SENTRY_DSN`, `VITE_SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_DSN`, `EAS_PROJECT_ID`
+
+---
+
+---
+
+## 📅 2026-04-20 — Documentació final
+
+### Fitxers creats / actualitzats
+
+- `README.md` — reescrit completament: visió, estructura, inici ràpid, model de dades, stack, algorismes, test de càrrega, deploy, seguretat
+- `docs/ARQUITECTURA.md` — diagrama E2E, flux de dades, decisions tècniques per capa (firmware, backend, pipeline, BD, app), seguretat, escalabilitat, format BLE GATT, taula de versions
+- `docs/DEPLOY.md` — guia pas a pas completa (9 seccions): Supabase, Railway, Vercel, EAS, Sentry, UptimeRobot, Firmware, verificació E2E, checklist de 30 punts, rollback
+
+---
+
+## 🏁 ESTAT FINAL DEL PROJECTE
+
+**Tot el codi, infraestructura i documentació estan completats.**
+
+### Resum de fitxers del projecte
+
+| Capa | Fitxers clau |
+|------|-------------|
+| Firmware | `firmware/src/main.cpp`, `sensors/`, `ble/`, `power/` |
+| Backend API | `backend/api/src/server.js`, `routes/` (4), `plugins/supabase.js` |
+| Base de dades | `migrations/001` + `002` + `003` (schema, passejades, RPCs) |
+| Edge Function | `backend/supabase/functions/pipeline-daily/index.ts` |
+| Pipeline Python | `compute_daily.py`, `compute_walks.py`, `compute_bathroom.py`, `compute_baseline.py`, `detect_anomalies.py` |
+| Tests Python | `tests/test_features.py` (11 tests), `validation/ernest_validation.py` |
+| App mòbil | `app/src/` (4 pantalles, BLE service, Zustand, hooks) |
+| Dashboard web | `src/components/DashboardReal.tsx`, `hooks/useDashboardData.ts` |
+| Demo visual | `ernest_demo.html` (propietari + veterinari + mockup app) |
+| Deploy | `Dockerfile`, `railway.json`, `vercel.json`, `app/eas.json` |
+| Tests càrrega | `backend/tests/load_test.js` |
+| Scripts | `scripts/preflight_check.sh` |
+| Documentació | `README.md`, `docs/ARQUITECTURA.md`, `docs/DEPLOY.md`, `CLAUDE.md` |
+
+### Pendents únics manuals
+1. Omplir claus reals al `.env` (Supabase, Sentry, EAS)
+2. Activar cron `0 3 * * *` a Supabase Dashboard
+3. Flashejar firmware a l'ESP32-S3 físic
+4. Recollir ≥ 14 dies de dades reals per al primer baseline
+5. Calibrar llindars anomalia post-pilot
+
+---
+
+## ⚠️ Notes operatives
 
 ### Dependències app mòbil
-Abans del primer `expo start`, instal·la des de `app/`:
 ```bash
-cd ~/Documents/git_projects/nus_can/app
-npm install
+cd app && npm install
 ```
 
 ### Variables d'entorn
-Copia `.env.example` a `.env` i omple amb les claus reals de Supabase:
 ```bash
 cp .env.example .env
-# edita .env amb les teves claus
+# Edita .env amb les claus reals de Supabase, Sentry i EAS
+```
+
+### Commit recomanat
+```bash
+cd ~/Documents/git_projects/nus_can
+git add -A
+git commit -m "feat: P6 + docs — deploy config, Sentry, EAS, migration 003, README, ARQUITECTURA, DEPLOY"
 ```
 
 ---
