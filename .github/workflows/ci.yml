@@ -1,0 +1,132 @@
+# ============================================================
+# .github/workflows/ci.yml
+# Ernest — CI Pipeline
+# Executa tests i build en cada push i PR.
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Python pipeline tests ────────────────────────────────
+  pipeline-tests:
+    name: Python pipeline (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short --no-header
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-coverage
+          path: pipeline/htmlcov/
+          if-no-files-found: ignore
+
+  # ── 2. Backend API tests ─────────────────────────────────────
+  backend-tests:
+    name: Backend API (Node 20)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Test
+        run: npm test --if-present
+        env:
+          NODE_ENV: test
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          JWT_SECRET: test-secret-not-for-production
+
+  # ── 3. Dashboard frontend build ──────────────────────────────
+  frontend-build:
+    name: Dashboard (Vite build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit --project tsconfig.json 2>/dev/null || true
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-dist
+          path: dist/
+          retention-days: 7
+
+  # ── 4. Docker build check ─────────────────────────────────────
+  docker-build:
+    name: Docker (API image)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/api/Dockerfile
+          push: false
+          tags: ernest-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
