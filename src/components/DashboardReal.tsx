@@ -66,13 +66,16 @@ function StatCard({ title, value, unit, trend, color = COL.primary }: {
   title: string; value: string; unit?: string; trend?: React.ReactNode; color?: string
 }) {
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-      <div className="text-slate-500 text-xs font-bold uppercase mb-1">{title}</div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-bold text-slate-900">{value}</span>
-        {unit && <span className="text-sm text-slate-400">{unit}</span>}
+    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-1 h-full rounded-l-2xl" style={{ backgroundColor: color }} />
+      <div className="pl-2">
+        <div className="text-slate-500 text-xs font-bold uppercase mb-1">{title}</div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-3xl font-bold text-slate-900">{value}</span>
+          {unit && <span className="text-sm text-slate-400">{unit}</span>}
+        </div>
+        {trend && <div className="mt-2 flex items-center gap-1 text-xs font-bold text-slate-400">{trend}</div>}
       </div>
-      {trend && <div className="mt-2 flex items-center gap-1 text-xs font-bold text-slate-400">{trend}</div>}
     </div>
   )
 }
@@ -134,7 +137,7 @@ export const DashboardReal: React.FC = () => {
   const [days, setDays]     = useState(30)
   const [activeNav, setActiveNav] = useState('pacients')
 
-  const { dogs, metrics, alerts, loading, error, reload, markAlertRead } =
+  const { dogs, metrics, alerts, loading, error, isDemo, reload, markAlertRead } =
     useDashboardData(selectedDogId, days)
 
   // Seleccionar primer gos per defecte
@@ -166,9 +169,14 @@ export const DashboardReal: React.FC = () => {
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <div className="w-full md:w-60 bg-slate-900 text-slate-400 p-5 flex flex-col gap-6 flex-shrink-0">
         <div className="flex items-center gap-2 text-white">
-          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">E</div>
+          <div className="w-7 h-7 bg-teal-500 rounded-lg flex items-center justify-center text-white text-xs font-black">E</div>
           <span className="font-bold text-base tracking-tight">Ernest</span>
-          <span className="ml-auto text-xs text-slate-600 font-mono">v1.0</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            {isDemo && (
+              <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold">DEMO</span>
+            )}
+            <span className="text-xs text-slate-600 font-mono">v1.0</span>
+          </div>
         </div>
 
         <nav className="flex flex-col gap-1">
@@ -216,11 +224,19 @@ export const DashboardReal: React.FC = () => {
         {/* Dog selector */}
         <DogSelector dogs={dogs} selected={selectedDogId} onSelect={setSelectedDogId} />
 
+        {/* Banner demo */}
+        {isDemo && !loading && (
+          <div className="mx-4 mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-700">
+            <span className="font-bold">DEMO</span>
+            <span>Dades simulades · Connecta Supabase per veure dades reals</span>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-slate-400">
-              <Activity size={32} className="mx-auto mb-2 animate-pulse" />
-              <div>Carregant dades de Supabase...</div>
+            <div className="text-center text-slate-400 space-y-3">
+              <div className="w-12 h-12 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="text-sm font-medium">Carregant dades...</div>
             </div>
           </div>
         ) : error ? (
@@ -264,10 +280,26 @@ export const DashboardReal: React.FC = () => {
 
             {/* Wellness + Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="col-span-2 md:col-span-1 bg-white p-4 rounded-2xl border-2 border-slate-100 flex flex-col items-center justify-center">
-                <div className="text-xs font-bold text-slate-400 uppercase mb-1">Índex Benestar</div>
-                <div className="text-5xl font-black" style={{ color: wColor }}>{wellness}</div>
-                <div className="text-xs font-bold mt-1" style={{ color: wColor }}>
+              {/* Wellness ring */}
+              <div className="col-span-2 md:col-span-1 bg-white p-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-1">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">Benestar</div>
+                <div className="relative w-24 h-24">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                    <circle
+                      cx="18" cy="18" r="15.9" fill="none"
+                      stroke={wColor} strokeWidth="3"
+                      strokeDasharray={`${wellness} ${100 - wellness}`}
+                      strokeLinecap="round"
+                      style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black leading-none" style={{ color: wColor }}>{wellness}</span>
+                    <span className="text-[9px] font-bold text-slate-400">/ 100</span>
+                  </div>
+                </div>
+                <div className="text-xs font-bold" style={{ color: wColor }}>
                   {wellness >= 80 ? 'Excel·lent' : wellness >= 60 ? 'Bé' : wellness >= 40 ? 'Atenció' : 'Alerta'}
                 </div>
               </div>
@@ -276,18 +308,21 @@ export const DashboardReal: React.FC = () => {
                 title="Activitat"
                 value={lastMetric?.activity_index?.toFixed(0) ?? '—'}
                 unit="/100"
+                color={COL.primary}
                 trend={trendIcon(metrics.map(m => m.activity_index), lastMetric?.activity_index)}
               />
               <StatCard
                 title="Simetria"
                 value={lastMetric?.symmetry_index?.toFixed(0) ?? '—'}
                 unit="/100"
+                color={COL.purple}
                 trend={trendIcon(metrics.map(m => m.symmetry_index), lastMetric?.symmetry_index)}
               />
               <StatCard
                 title="Repòs"
                 value={lastMetric?.rest_hours?.toFixed(1) ?? '—'}
                 unit="h"
+                color={COL.success}
                 trend={trendIcon(metrics.map(m => m.rest_hours), lastMetric?.rest_hours)}
               />
             </div>
