@@ -8,13 +8,14 @@
 | Fase | Estat | Data inici | Data fi |
 |------|-------|-----------|---------|
 | P0 — Setup | ✅ Completat | 2025-04-14 | 2025-04-14 |
-| **Documentació final** | ✅ Completat | 2026-04-20 | 2026-04-20 |
 | P1 — Firmware ESP32 | ✅ Completat | 2025-04-14 | 2025-04-14 |
 | P2 — App mòbil BLE | ✅ Completat | 2025-04-14 | 2026-04-14 |
 | P3 — Backend API | ✅ Completat | 2025-04-14 | 2025-04-14 |
 | P4 — Pipeline dades | ✅ Completat | 2025-04-14 | 2025-04-14 |
 | P5 — Dashboard web | ✅ Completat | 2026-04-14 | 2026-04-14 |
 | P6 — Integració + tests | ✅ Completat | 2026-04-18 | 2026-04-18 |
+| **Documentació final** | ✅ Completat | 2026-04-20 | 2026-04-20 |
+| **Acabat & poliment** | ✅ Completat | 2026-04-29 | 2026-04-29 |
 
 ---
 
@@ -412,34 +413,138 @@ supabase functions deploy pipeline-daily --no-verify-jwt
 
 ---
 
+---
+
+## 📅 2026-04-29 — Acabat & poliment: rebranding, CI/CD, auditoria
+
+### Context
+Sessió de poliment final. Objectiu: tancar tots els residus de l'era VetCare, afegir CI/CD que faltava, i garantir coherència total del codebase.
+
+### Canvis realitzats
+
+#### Rebranding complet VetCare → Ernest
+- `index.html` — títol: "VetCare | Salut Intel·ligent per Mascotes" → "Ernest | Monitorització Intel·ligent de Salut Canina"
+- `components/SlideLayout.tsx` — badge de capçalera: div blau simple → badge `bg-slate-900` amb icona "E" teal + "ERNEST"
+- `App.tsx` — "Model VetCare" → "Model Ernest", "Ecosistema VetCare" → "Ecosistema Ernest", email info@vetcare.com → hola@massiusoft.com
+- `components/DashboardDemo.tsx` — "VetCare Pro" → "Ernest", "Indicador de Dolor (IA)" → "Índex d'Anomalia (IA)", camp de dades `pain` → `anomaly`, visualització `x/10` → `x/1.0` (consistent amb anomaly_score)
+- `metadata.json` — `"VetCare Smart Pet Health"` → `"Ernest — Monitorització Intel·ligent de Salut Canina"` amb descripció tècnica real
+
+#### Dashboard en mode demo (sense Supabase)
+- `src/hooks/useDashboardData.ts` — reescrit completament:
+  - `IS_DEMO = !import.meta.env.VITE_SUPABASE_URL` — detecció automàtica
+  - `makeDemoMetrics(dogId, days, scenario)` — 30 dies de dades realistes amb anomalia els últims 4 dies (si scenario='anomalia')
+  - `DEMO_DOGS` — Nus (Llaurador, 28.5kg, online 74%), Lluna (Bòrder Collie, 91%), Bruno (Pastor Alemany, offline 38%)
+  - `DEMO_ALERTS` — 2 alertes per a Nus: urgent (activitat), warning (temperatura)
+  - Fallback silenciós: si Supabase falla → mode demo sense mostrar error
+  - Realtime subscription desactivada en mode demo
+
+#### Millores visuals dashboard
+- `src/components/DashboardReal.tsx`:
+  - Badge DEMO ambre visible quan `isDemo === true`
+  - Loading spinner CSS (ring rotatiu) en lloc del text `animate-pulse`
+  - `StatCard` — barra d'accent lateral esquerra amb color semàntic (activitat=teal, simetria=lila, repòs=verd)
+  - Wellness: substituït número simple per un anell SVG circular amb `strokeDasharray` animat
+
+#### GitHub Actions CI/CD (nou)
+- `.github/workflows/ci.yml` — 4 jobs en paral·lel:
+  - `pipeline-tests` → `pytest pipeline/tests/` amb Python 3.11 + cache pip
+  - `backend-tests` → `npm ci + lint + test` a `backend/api/` amb Node 20
+  - `frontend-build` → `tsc --noEmit + vite build` del dashboard
+  - `docker-build` → build imatge Docker sense push (verifica que compila)
+  - S'activa en push a `main`/`develop` i PRs a `main`
+
+- `.github/workflows/deploy-backend.yml` — Deploy a Railway:
+  - Activa en push a `main` si canvien fitxers de `backend/`
+  - Migracions SQL opcionals: si commit porta `[migrate]` o flag manual
+  - Health check post-deploy: 12 intents × 10s (2 min màxim)
+  - Crea issue GitHub automàticament si el deploy falla
+
+- `.github/workflows/deploy-frontend.yml` — Deploy a Vercel:
+  - Activa en push a `main` si canvien fitxers del dashboard
+  - Build amb secrets de GitHub, deploy `--prod`
+
+#### `types.ts` — Reescriptura completa
+Eliminats (era VetCare obsoleta):
+- `enum AppView { VETERINARIAN, OWNER }` — mai es va usar
+- `interface ActivityData { painLevel }` — concepte VetCare, no Ernest
+- `interface SlideProps` — mantigut
+
+Nous tipus del domini Ernest:
+- `SensorPacket` — paquet BLE 20-byte (ts, acc XYZ, gyro XYZ, tempSurface, batteryPct)
+- `DeviceStatus`, `DeviceHealth`
+- `Dog`, `DailyMetrics`, `Baseline`
+- `AlertSeverity`, `MetricKey`, `Alert`
+- `WalkSession`, `BathroomEventType`, `BathroomEvent`
+- `PipelineRun`
+- `IngestPayload`, `ApiResponse<T>`
+- `WellnessSnapshot`, `ChartPeriod`, `ChartDataPoint`
+
+#### Neteja `vite.config.ts`
+- Eliminades les línies `define: { 'process.env.GEMINI_API_KEY': ... }` — residu de l'era VetCare; Ernest no usa cap API Gemini/LLM
+- Eliminat `loadEnv` innecessari i simplificat a `defineConfig(() => {...})`
+
+### Commits d'aquesta sessió
+```
+090a8e3  chore: actualitza package-lock.json
+e2fa955  fix: elimina residus era VetCare — DashboardDemo + vite.config
+bd29475  feat: rebranding Ernest + dashboard demo data + millores visuals
+9715887  feat: CI/CD GitHub Actions + types Ernest + metadata
+```
+
+### Decisions tècniques
+- **Demo mode automàtic**: qualsevol entorn sense `VITE_SUPABASE_URL` mostra dades simulades realistes. Zero configuració manual per a demos a clients.
+- **Anomaly vs Pain**: el camp de dades del dashboard s'anomena `anomaly` (0-1, escala Ernest), no `pain` (0-10, paradigma VetCare). Reflecteix millor la proposta de valor.
+- **CI gated per paths**: els workflows de deploy només s'activen si canvien fitxers de la seva capa. Evita redeploys innecessaris si canvia documentació o firmware.
+- **Supabase migrations manuals**: les migracions SQL no s'apliquen automàticament en CI. Cal flag explícit `[migrate]` al commit o dispatch manual. Decisió deliberada: les migracions sobre producció sempre han de ser revisades per un humà.
+
+---
+
 ## 🏁 ESTAT FINAL DEL PROJECTE
 
-**Tot el codi, infraestructura i documentació estan completats.**
+**Tot el codi, infraestructura, CI/CD i documentació estan completats. Codebase lliure de residus VetCare.**
 
-### Resum de fitxers del projecte
+### Resum de fitxers del projecte (actualitzat 2026-04-29)
 
 | Capa | Fitxers clau |
 |------|-------------|
 | Firmware | `firmware/src/main.cpp`, `sensors/`, `ble/`, `power/` |
 | Backend API | `backend/api/src/server.js`, `routes/` (4), `plugins/supabase.js` |
-| Base de dades | `migrations/001` + `002` + `003` (schema, passejades, RPCs) |
+| Base de dades | `migrations/001` + `002` + `003` (schema, passejades, RPCs + pipeline_runs) |
 | Edge Function | `backend/supabase/functions/pipeline-daily/index.ts` |
 | Pipeline Python | `compute_daily.py`, `compute_walks.py`, `compute_bathroom.py`, `compute_baseline.py`, `detect_anomalies.py` |
 | Tests Python | `tests/test_features.py` (11 tests), `validation/ernest_validation.py` |
-| App mòbil | `app/src/` (4 pantalles, BLE service, Zustand, hooks) |
-| Dashboard web | `src/components/DashboardReal.tsx`, `hooks/useDashboardData.ts` |
-| Demo visual | `ernest_demo.html` (propietari + veterinari + mockup app) |
-| Deploy | `Dockerfile`, `railway.json`, `vercel.json`, `app/eas.json` |
+| App mòbil | `app/src/` (4 pantalles, BLE service, Zustand, hooks), `app.config.js`, `eas.json` |
+| Dashboard web | `src/components/DashboardReal.tsx`, `src/hooks/useDashboardData.ts` (demo mode) |
+| Demo visual | `ernest_demo.html` (propietari + veterinari + mockup app, vanilla JS) |
+| CI/CD | `.github/workflows/ci.yml`, `deploy-backend.yml`, `deploy-frontend.yml` |
+| Deploy | `backend/api/Dockerfile`, `railway.json`, `vercel.json` |
 | Tests càrrega | `backend/tests/load_test.js` |
 | Scripts | `scripts/preflight_check.sh` |
-| Documentació | `README.md`, `docs/ARQUITECTURA.md`, `docs/DEPLOY.md`, `CLAUDE.md` |
+| Tipus TS | `types.ts` (domini Ernest complet: SensorPacket, Dog, Alert, WalkSession, etc.) |
+| Documentació | `README.md`, `docs/ARQUITECTURA.md`, `docs/DEPLOY.md`, `CLAUDE.md`, `PROCESS_LOG.md` |
 
-### Pendents únics manuals
-1. Omplir claus reals al `.env` (Supabase, Sentry, EAS)
-2. Activar cron `0 3 * * *` a Supabase Dashboard
-3. Flashejar firmware a l'ESP32-S3 físic
-4. Recollir ≥ 14 dies de dades reals per al primer baseline
-5. Calibrar llindars anomalia post-pilot
+### Git — Historial de commits (branca `claude/nervous-haslett`)
+```
+090a8e3  chore: actualitza package-lock.json
+e2fa955  fix: elimina residus era VetCare — DashboardDemo + vite.config
+bd29475  feat: rebranding Ernest + dashboard demo data + millores visuals
+9715887  feat: CI/CD GitHub Actions + types Ernest + metadata
+d3a2d3d  feat: P6 + docs — integració completa, deploy config i documentació final
+e6722d1  feat: P4+ walks & bathroom — passejades, pipi/caca, demo dual-view
+7d6d4bf  feat: P2+P5 Ernest — app mòbil BLE + dashboard Supabase real
+dbf1960  feat: P0-P4 Ernest — firmware ESP32, backend Fastify, pipeline Python
+```
+
+### Pendents únics manuals (NO es poden automatitzar)
+| # | Tasca | Responsable |
+|---|-------|-------------|
+| 1 | Afegir secrets a GitHub: `RAILWAY_TOKEN`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_URL`, `API_BASE_URL` | Massiu Soft |
+| 2 | Omplir claus reals al `.env` (Supabase, Sentry, EAS) | Massiu Soft |
+| 3 | Activar cron `0 3 * * *` a Supabase Dashboard → Edge Functions | Massiu Soft |
+| 4 | Fer merge de `claude/nervous-haslett` → `main` | Massiu Soft |
+| 5 | Flashejar firmware a l'ESP32-S3 físic | Maquinari |
+| 6 | Recollir ≥ 14 dies de dades reals per al primer baseline | Pilot |
+| 7 | Calibrar llindars anomalia (MIN_RANGE_RATIO, CONSECUTIVE_DAYS) post-pilot | Pipeline |
 
 ---
 
