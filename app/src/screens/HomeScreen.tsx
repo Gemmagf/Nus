@@ -8,7 +8,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, RefreshControl,
   StyleSheet, ActivityIndicator, Platform
 } from 'react-native'
-import { fetchDogs, fetchDailyMetrics, fetchAlerts, markAlertRead } from '../services/api'
+import { fetchDogs, fetchDailyMetrics, fetchAlerts, markAlertRead, fetchEnergySnapshots } from '../services/api'
 import { useAppStore } from '../store'
 import { useBleSync } from '../hooks/useBleSync'
 
@@ -102,7 +102,8 @@ function BleBar({ status, message, onConnect, onDisconnect, pending, lastSync }:
 export default function HomeScreen() {
   const { dogs, selectedDog, setDogs, selectDog,
           bleStatus, bleMessage, alerts, setAlerts, markRead,
-          lastSync, pendingPkts, setBle } = useAppStore()
+          lastSync, pendingPkts, setBle,
+          currentEnergy, energyAlertLevel, setEnergySnapshots } = useAppStore()
 
   const [metrics, setMetrics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -120,12 +121,14 @@ export default function HomeScreen() {
       const dog = selectedDog ?? dogsData[0]
       if (dog) {
         if (!selectedDog) selectDog(dog)
-        const [metricsData, alertsData] = await Promise.all([
+        const [metricsData, alertsData, energyData] = await Promise.all([
           fetchDailyMetrics(dog.id, 1),
           fetchAlerts(dog.id),
+          fetchEnergySnapshots(dog.id, 24),
         ])
         setMetrics(metricsData[metricsData.length - 1] ?? null)
         setAlerts(alertsData)
+        setEnergySnapshots(energyData)
       }
     } catch (e) {
       console.error('Load error', e)
@@ -181,6 +184,38 @@ export default function HomeScreen() {
               <Text style={styles.wellnessDog}>{selectedDog.name}</Text>
             </View>
           </View>
+
+          {/* Energia última sortida */}
+          {currentEnergy !== null && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>⚡ Energia · Última sortida</Text>
+              <View style={[styles.energyCard, {
+                borderColor: energyAlertLevel === 'urgent'  ? C.urgent  :
+                             energyAlertLevel === 'warning' ? C.warning : C.success
+              }]}>
+                <View style={styles.energyLeft}>
+                  <Text style={[styles.energyPct, { color:
+                    energyAlertLevel === 'urgent'  ? C.urgent  :
+                    energyAlertLevel === 'warning' ? C.warning : C.success
+                  }]}>{Math.round(currentEnergy)}%</Text>
+                  <Text style={styles.energySub}>
+                    {currentEnergy > 60 ? 'Excel·lent' :
+                     currentEnergy > 35 ? 'Moderada'   :
+                     currentEnergy > 15 ? 'Baixa ⚠'   : 'Crítica 🚨'}
+                  </Text>
+                </View>
+                {/* Barra visual */}
+                <View style={styles.energyBarBg}>
+                  <View style={[styles.energyBarFill, {
+                    width: `${currentEnergy}%` as any,
+                    backgroundColor:
+                      energyAlertLevel === 'urgent'  ? C.urgent  :
+                      energyAlertLevel === 'warning' ? C.warning : C.success,
+                  }]} />
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Alertes */}
           {unread.length > 0 && (
@@ -248,4 +283,11 @@ const styles = StyleSheet.create({
   alertMeta:      { fontSize: 11, color: C.sub, marginTop: 6 },
   emptyCard:      { margin: 16, backgroundColor: C.card, borderRadius: 14, padding: 32, alignItems: 'center' },
   emptyTxt:       { color: C.sub, textAlign: 'center', lineHeight: 22 },
+
+  energyCard:     { backgroundColor: C.card, borderRadius: 16, padding: 16, borderWidth: 2, flexDirection: 'row', alignItems: 'center', gap: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  energyLeft:     { minWidth: 72, alignItems: 'center' },
+  energyPct:      { fontSize: 32, fontWeight: '800' },
+  energySub:      { fontSize: 11, color: C.sub, fontWeight: '600', marginTop: 2 },
+  energyBarBg:    { flex: 1, height: 10, backgroundColor: '#E0E7EF', borderRadius: 5, overflow: 'hidden' },
+  energyBarFill:  { height: '100%', borderRadius: 5 },
 })

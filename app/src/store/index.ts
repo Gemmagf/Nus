@@ -4,9 +4,10 @@
 // ============================================================
 import { create } from 'zustand'
 import type { BleStatus } from '../services/ble'
+import type { EnergySnapshot } from '../services/api'
 
 interface Dog {
-  id: string; name: string; breed?: string; weight_kg?: number
+  id: string; name: string; breed?: string; birth_date?: string; weight_kg?: number
   device_health?: { battery_pct: number; is_online: boolean; last_seen_at: string }
 }
 
@@ -41,6 +42,13 @@ interface AppState {
   pendingPkts: number
   setLastSync: (d: Date) => void
   setPending:  (n: number) => void
+
+  // Energia
+  energySnapshots:    EnergySnapshot[]
+  currentEnergy:      number | null   // % actual (0-100)
+  energyAlertLevel:   'ok' | 'warning' | 'urgent'
+  setEnergySnapshots: (snaps: EnergySnapshot[]) => void
+  setCurrentEnergy:   (pct: number, level: 'ok' | 'warning' | 'urgent') => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -64,4 +72,17 @@ export const useAppStore = create<AppState>((set) => ({
   pendingPkts: 0,
   setLastSync: (lastSync) => set({ lastSync }),
   setPending:  (pendingPkts) => set({ pendingPkts }),
+
+  energySnapshots:    [],
+  currentEnergy:      null,
+  energyAlertLevel:   'ok',
+  setEnergySnapshots: (energySnapshots) => {
+    const last = energySnapshots.at(-1)
+    set({
+      energySnapshots,
+      currentEnergy:    last?.energy_pct ?? null,
+      energyAlertLevel: last?.alert_level ?? 'ok',
+    })
+  },
+  setCurrentEnergy: (pct, level) => set({ currentEnergy: pct, energyAlertLevel: level }),
 }))
