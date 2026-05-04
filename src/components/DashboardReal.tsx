@@ -14,6 +14,7 @@ import {
   CheckCircle, Wifi, WifiOff, Battery, BatteryLow
 } from 'lucide-react'
 import { useDashboardData, type Dog, type DailyMetric, type Alert } from '../hooks/useDashboardData'
+import { EnergyWidget } from './EnergyWidget'
 
 // ── Paleta Ernest ─────────────────────────────────────────────
 const COL = {
@@ -137,7 +138,7 @@ export const DashboardReal: React.FC = () => {
   const [days, setDays]     = useState(30)
   const [activeNav, setActiveNav] = useState('pacients')
 
-  const { dogs, metrics, alerts, loading, error, isDemo, reload, markAlertRead } =
+  const { dogs, metrics, alerts, energySnapshots, loading, error, isDemo, reload, markAlertRead } =
     useDashboardData(selectedDogId, days)
 
   // Seleccionar primer gos per defecte
@@ -424,6 +425,18 @@ export const DashboardReal: React.FC = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
+            )}
+
+            {/* Widget d'energia — última sortida */}
+            {energySnapshots.length > 0 && (
+              <div className="mt-4">
+                <EnergyWidget
+                  dogName={selectedDog.name}
+                  breed={selectedDog.breed}
+                  snapshots={energySnapshots}
+                  isLive={false}
+                />
               </div>
             )}
 

@@ -43,9 +43,80 @@ export interface Alert {
   is_read: boolean
 }
 
+export type FatigueSignal =
+  | 'pauses_increasing'
+  | 'symmetry_declining'
+  | 'temp_elevated'
+  | 'pace_slowing'
+  | 'sudden_drop'
+
+export interface EnergySnapshot {
+  ts: string
+  energy_pct: number
+  drain_rate: number
+  fatigue_signals: FatigueSignal[]
+  alert_level: 'ok' | 'warning' | 'urgent'
+  estimated_remaining_min: number | null
+}
+
 // ── Dades de demo ─────────────────────────────────────────────
 // S'usen quan VITE_SUPABASE_URL no està configurat.
 const IS_DEMO = !import.meta.env.VITE_SUPABASE_URL
+
+// Genera snapshots d'energia simulats per a la última sortida.
+// Escenari 'anomalia': simula la sortida d'ahir on el gos va parar a la meitat.
+function makeDemoEnergySnapshots(scenario: 'sa' | 'anomalia'): EnergySnapshot[] {
+  const snapshots: EnergySnapshot[] = []
+  const base = new Date()
+  base.setHours(9, 30, 0, 0)   // sortida a les 9:30
+
+  if (scenario === 'anomalia') {
+    // Sortida de 45 min: energia cau ràpid, fatiga als 20 min, aturada als 25 min
+    const plan: Array<{
+      min: number; energy: number; drain: number
+      signals: FatigueSignal[]; alert: 'ok' | 'warning' | 'urgent'
+      remaining: number | null
+    }> = [
+      { min: 0,  energy: 100, drain: 1.2, signals: [],                             alert: 'ok',     remaining: 83 },
+      { min: 5,  energy: 93,  drain: 1.4, signals: [],                             alert: 'ok',     remaining: 66 },
+      { min: 10, energy: 84,  drain: 1.5, signals: [],                             alert: 'ok',     remaining: 56 },
+      { min: 15, energy: 73,  drain: 1.7, signals: ['temp_elevated'],              alert: 'ok',     remaining: 43 },
+      { min: 20, energy: 60,  drain: 2.1, signals: ['temp_elevated','pace_slowing'],alert: 'warning',remaining: 29 },
+      { min: 25, energy: 42,  drain: 2.8, signals: ['pauses_increasing','temp_elevated','pace_slowing'], alert: 'warning', remaining: 15 },
+      { min: 30, energy: 21,  drain: 4.2, signals: ['pauses_increasing','symmetry_declining','temp_elevated','sudden_drop'], alert: 'urgent', remaining: 5 },
+      { min: 35, energy: 14,  drain: 1.0, signals: ['pauses_increasing','symmetry_declining'], alert: 'urgent', remaining: null },  // gos estirat
+      { min: 40, energy: 18,  drain: -0.5, signals: ['symmetry_declining'],        alert: 'warning', remaining: null }, // recuperant
+      { min: 45, energy: 24,  drain: -0.8, signals: [],                            alert: 'ok',      remaining: null }, // de tornada
+    ]
+    plan.forEach(p => {
+      const ts = new Date(base.getTime() + p.min * 60000)
+      snapshots.push({
+        ts: ts.toISOString(),
+        energy_pct: p.energy,
+        drain_rate: p.drain,
+        fatigue_signals: p.signals,
+        alert_level: p.alert,
+        estimated_remaining_min: p.remaining,
+      })
+    })
+  } else {
+    // Sortida normal: 60 min, energia decreix suaument, recuperació bona
+    const totalMin = 60
+    for (let m = 0; m <= totalMin; m += 5) {
+      const energy = Math.max(45, 100 - m * 0.9 + Math.random() * 4 - 2)
+      const ts = new Date(base.getTime() + m * 60000)
+      snapshots.push({
+        ts: ts.toISOString(),
+        energy_pct: +energy.toFixed(1),
+        drain_rate: +(0.8 + Math.random() * 0.3).toFixed(2),
+        fatigue_signals: [],
+        alert_level: 'ok',
+        estimated_remaining_min: m < totalMin ? Math.round((totalMin - m) * 0.9) : null,
+      })
+    }
+  }
+  return snapshots
+}
 
 function makeDemoMetrics(dogId: string, days: number, scenario: 'sa' | 'anomalia'): DailyMetric[] {
   const metrics: DailyMetric[] = []
@@ -140,12 +211,13 @@ const DEMO_ALERTS: Alert[] = [
 
 // ── Hook principal ─────────────────────────────────────────────
 export function useDashboardData(dogId?: string, days = 30) {
-  const [dogs, setDogs]         = useState<Dog[]>([])
-  const [metrics, setMetrics]   = useState<DailyMetric[]>([])
-  const [alerts, setAlerts]     = useState<Alert[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState<string | null>(null)
-  const [isDemo, setIsDemo]     = useState(false)
+  const [dogs, setDogs]                   = useState<Dog[]>([])
+  const [metrics, setMetrics]             = useState<DailyMetric[]>([])
+  const [alerts, setAlerts]               = useState<Alert[]>([])
+  const [energySnapshots, setEnergySnapshots] = useState<EnergySnapshot[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState<string | null>(null)
+  const [isDemo, setIsDemo]               = useState(false)
 
   const loadDogs = useCallback(async () => {
     const { data, error } = await supabase
@@ -192,6 +264,7 @@ export function useDashboardData(dogId?: string, days = 30) {
       setDogs(DEMO_DOGS)
       setMetrics(makeDemoMetrics(targetId, days, scenario as 'sa' | 'anomalia'))
       setAlerts(targetId === 'demo-nus' ? DEMO_ALERTS : [])
+      setEnergySnapshots(makeDemoEnergySnapshots(scenario as 'sa' | 'anomalia'))
       setIsDemo(true)
       setLoading(false)
       return
@@ -215,6 +288,7 @@ export function useDashboardData(dogId?: string, days = 30) {
       setDogs(DEMO_DOGS)
       setMetrics(makeDemoMetrics(targetId, days, scenario as 'sa' | 'anomalia'))
       setAlerts(targetId === 'demo-nus' ? DEMO_ALERTS : [])
+      setEnergySnapshots(makeDemoEnergySnapshots(scenario as 'sa' | 'anomalia'))
       setIsDemo(true)
       setError(null) // no mostrar error, mostrar demo
     } finally {
@@ -246,5 +320,5 @@ export function useDashboardData(dogId?: string, days = 30) {
     return () => { supabase.removeChannel(channel) }
   }, [dogId, isDemo])
 
-  return { dogs, metrics, alerts, loading, error, isDemo, reload: load, markAlertRead }
+  return { dogs, metrics, alerts, energySnapshots, loading, error, isDemo, reload: load, markAlertRead }
 }
