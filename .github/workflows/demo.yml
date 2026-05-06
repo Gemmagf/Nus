@@ -12,7 +12,7 @@ name: Demo → GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/nervous-haslett]
   workflow_dispatch:   # permet llançar-lo manualment des de GitHub
 
 permissions:
