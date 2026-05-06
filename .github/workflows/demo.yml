@@ -1,0 +1,62 @@
+# ============================================================
+# .github/workflows/demo.yml
+# Ernest — Deploy demo pública a GitHub Pages
+#
+# URL resultant: https://gemmagf.github.io/Nus/
+#
+# No necessita Supabase ni cap secret — el dashboard detecta
+# automàticament que no hi ha VITE_SUPABASE_URL i mostra
+# dades simulades realistes (mode DEMO).
+# ============================================================
+name: Demo → GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # permet llançar-lo manualment des de GitHub
+
+permissions:
+  contents: read
+  pages:    write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build demo i deploy a Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instal·la dependències
+        run: npm ci
+
+      - name: Build (mode demo — sense Supabase)
+        run: npm run build
+        env:
+          # Sense VITE_SUPABASE_URL → IS_DEMO = true → dades simulades
+          VITE_BASE_PATH: /Nus/
+
+      - name: Configura GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Puja artefacte
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+      - name: Deploy a GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
