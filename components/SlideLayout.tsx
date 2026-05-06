@@ -35,8 +35,9 @@ export const SlideLayout: React.FC<SlideLayoutProps> = ({
           {subtitle && <p className="text-slate-500 mt-1 font-medium">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-teal-600 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest shadow-lg shadow-teal-200">
-            VetCare
+          <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+            <div className="w-4 h-4 bg-teal-500 rounded-md flex items-center justify-center text-[9px] font-black">E</div>
+            ERNEST
           </div>
         </div>
       </header>

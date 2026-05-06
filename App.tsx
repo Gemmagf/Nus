@@ -118,7 +118,7 @@ const App: React.FC = () => {
                <Activity size={120} className="text-teal-500" />
              </div>
              <div className="relative z-10">
-               <span className="text-teal-500 font-bold uppercase tracking-widest text-xs">Model VetCare</span>
+               <span className="text-teal-500 font-bold uppercase tracking-widest text-xs">Model Ernest</span>
                <h3 className="text-3xl font-bold mt-2 mb-4 text-white">Proactiu</h3>
                <p className="text-slate-400 leading-relaxed">Dades contínues 24/7. Detectem canvis de mobilitat setmanes abans de la manifestació clínica externa.</p>
                <div className="mt-8 flex items-center gap-2 text-teal-400 font-bold">
@@ -133,7 +133,7 @@ const App: React.FC = () => {
     // 3. Solució (Product Overview) - UPDATED with Illustration
     <SlideLayout 
       key="2"
-      title="Ecosistema VetCare"
+      title="Ecosistema Ernest"
       subtitle="La fusió perfecta entre Hardware d'alta precisió i IA"
       onNext={nextSlide} onPrev={prevSlide}
     >
@@ -236,7 +236,7 @@ const App: React.FC = () => {
                </div>
              </div>
              <p className="text-slate-600 mb-6 italic leading-relaxed">
-               "Sense VetCare, hauríem esperat a la revisió del mes. Vam detectar una infecció incipient gràcies a la baixada sobtada d'activitat al dia 4."
+               "Sense Ernest, hauríem esperat a la revisió del mes. Vam detectar una infecció incipient gràcies a la baixada sobtada d'activitat al dia 4."
              </p>
              <div className="flex gap-4">
                <div className="flex-1 p-4 bg-teal-50 rounded-2xl">
@@ -367,7 +367,7 @@ const App: React.FC = () => {
             <button className="px-10 py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold text-xl hover:scale-105 transition-transform flex items-center gap-3">
               <MousePointer2 /> Sí, m'interessa el pilot
             </button>
-            <div className="text-slate-400 font-medium">o envia un email a info@vetcare.com</div>
+            <div className="text-slate-400 font-medium">o envia un email a <span className="text-teal-600 font-semibold">hola@massiusoft.com</span></div>
           </div>
         </div>
         

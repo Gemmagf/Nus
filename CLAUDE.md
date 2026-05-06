@@ -269,7 +269,7 @@ Inclou `hydration_level` (molt baix/baix/normal/alt) i `digestive_status` (cap/n
 - [x] P4 — Pipeline dades (mètriques + baseline) — v1.1 amb filtres anti-fals-positius
 - [x] P5 — Dashboard web complet — DashboardReal.tsx connectat a Supabase + Realtime
 - [x] P4+ — Anàlisi passejades + detecció pipi/caca — compute_walks.py, compute_bathroom.py, SQL migration 002, demo dual-view
-- [ ] P6 — Integració + tests end-to-end + validació gos real
+- [x] P6 — Integració + tests + deploy — load_test.js, Edge Function cron, Dockerfile, railway.json, vercel.json, preflight_check.sh
 
 ---
 

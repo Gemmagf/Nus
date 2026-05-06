@@ -7,23 +7,23 @@ import {
 import { Activity, Thermometer, Footprints, AlertCircle, Info, User, ClipboardList, Settings } from 'lucide-react';
 
 const DATA_NORMAL = [
-  { day: 'Dl', activity: 4500, symmetry: 98, pain: 1 },
-  { day: 'Dt', activity: 5200, symmetry: 97, pain: 1 },
-  { day: 'Dc', activity: 4800, symmetry: 99, pain: 1 },
-  { day: 'Dj', activity: 5100, symmetry: 98, pain: 2 },
-  { day: 'Dv', activity: 4900, symmetry: 98, pain: 1 },
-  { day: 'Ds', activity: 6500, symmetry: 97, pain: 2 },
-  { day: 'Dg', activity: 4200, symmetry: 99, pain: 1 },
+  { day: 'Dl', activity: 4500, symmetry: 98, anomaly: 1 },
+  { day: 'Dt', activity: 5200, symmetry: 97, anomaly: 1 },
+  { day: 'Dc', activity: 4800, symmetry: 99, anomaly: 1 },
+  { day: 'Dj', activity: 5100, symmetry: 98, anomaly: 2 },
+  { day: 'Dv', activity: 4900, symmetry: 98, anomaly: 1 },
+  { day: 'Ds', activity: 6500, symmetry: 97, anomaly: 2 },
+  { day: 'Dg', activity: 4200, symmetry: 99, anomaly: 1 },
 ];
 
 const DATA_ISSUE = [
-  { day: 'Dl', activity: 4500, symmetry: 98, pain: 1 },
-  { day: 'Dt', activity: 4200, symmetry: 92, pain: 3 },
-  { day: 'Dc', activity: 3100, symmetry: 84, pain: 5 },
-  { day: 'Dj', activity: 2200, symmetry: 78, pain: 7 },
-  { day: 'Dv', activity: 1800, symmetry: 72, pain: 8 },
-  { day: 'Ds', activity: 1500, symmetry: 68, pain: 9 },
-  { day: 'Dg', activity: 1200, symmetry: 65, pain: 9 },
+  { day: 'Dl', activity: 4500, symmetry: 98, anomaly: 1 },
+  { day: 'Dt', activity: 4200, symmetry: 92, anomaly: 3 },
+  { day: 'Dc', activity: 3100, symmetry: 84, anomaly: 5 },
+  { day: 'Dj', activity: 2200, symmetry: 78, anomaly: 7 },
+  { day: 'Dv', activity: 1800, symmetry: 72, anomaly: 8 },
+  { day: 'Ds', activity: 1500, symmetry: 68, anomaly: 9 },
+  { day: 'Dg', activity: 1200, symmetry: 65, anomaly: 9 },
 ];
 
 export const DashboardDemo: React.FC = () => {
@@ -38,7 +38,7 @@ export const DashboardDemo: React.FC = () => {
           <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
             <Footprints size={18} className="text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight">VetCare Pro</span>
+          <span className="font-bold text-xl tracking-tight">Ernest</span>
         </div>
         
         <nav className="flex flex-col gap-2">
@@ -124,12 +124,13 @@ export const DashboardDemo: React.FC = () => {
           </div>
 
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-            <div className="text-slate-500 text-xs font-bold uppercase mb-1">Indicador de Dolor (IA)</div>
+            <div className="text-slate-500 text-xs font-bold uppercase mb-1">Índex d'Anomalia (IA)</div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-slate-900">{data[data.length-1].pain}/10</span>
+              <span className="text-3xl font-bold text-slate-900">{(data[data.length-1].anomaly / 10).toFixed(1)}</span>
+              <span className="text-sm text-slate-400">/ 1.0</span>
             </div>
             <div className={`mt-2 text-xs font-bold ${hasIssue ? 'text-red-500' : 'text-blue-500'}`}>
-              {hasIssue ? 'Augment significatiu detectat' : 'Sense senyals de dolor'}
+              {hasIssue ? 'Anomalia significativa detectada' : 'Dins del rang habitual'}
             </div>
           </div>
         </div>

@@ -93,3 +93,57 @@ export async function markAlertRead(alertId: number) {
     .eq('id', alertId)
   if (error) throw error
 }
+
+// ── Energia i fatiga ─────────────────────────────────────────
+export interface EnergySnapshot {
+  ts: string
+  energy_pct: number
+  drain_rate: number
+  fatigue_signals: string[]
+  alert_level: 'ok' | 'warning' | 'urgent'
+  estimated_remaining_min: number | null
+}
+
+/** Últims N snapshots d'energia del gos (última sortida o sessió live). */
+export async function fetchEnergySnapshots(
+  dogId: string,
+  limitHours = 24
+): Promise<EnergySnapshot[]> {
+  const from = new Date(Date.now() - limitHours * 3600000).toISOString()
+  const { data, error } = await supabase
+    .from('energy_snapshots')
+    .select('ts, energy_pct, drain_rate, fatigue_signals, alert_level, estimated_remaining_min')
+    .eq('dog_id', dogId)
+    .gte('ts', from)
+    .order('ts', { ascending: true })
+    .limit(200)
+  if (error) throw error
+  return (data ?? []) as EnergySnapshot[]
+}
+
+/** Energia actual del gos (última lectura). Null si no hi ha dades. */
+export async function fetchLiveEnergy(dogId: string): Promise<EnergySnapshot | null> {
+  const { data, error } = await supabase
+    .from('live_energy')
+    .select('*')
+    .eq('dog_id', dogId)
+    .single()
+  if (error) return null
+  return data as EnergySnapshot
+}
+
+/** Pressupost energètic estimat via RPC. */
+export async function fetchEnergyBudget(dogId: string): Promise<{
+  current_energy_pct: number
+  avg_drain_rate_per_min: number
+  estimated_remaining_min: number | null
+  fatigue_signals: string[]
+  alert_level: 'ok' | 'warning' | 'urgent'
+} | null> {
+  const { data, error } = await supabase.rpc('compute_energy_budget', {
+    p_dog_id: dogId,
+    p_minutes: 30,
+  })
+  if (error || !data?.length) return null
+  return data[0]
+}

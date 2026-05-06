@@ -1,5 +1,5 @@
 {
-  "name": "VetCare Smart Pet Health",
-  "description": "An interactive presentation for a smart wearable pet mobility monitoring system.",
+  "name": "Ernest — Monitorització Intel·ligent de Salut Canina",
+  "description": "Sistema de monitorització contínua de la salut canina mitjançant arnès IoT. Detecta canvis en activitat, descans, simetria i temperatura comparant cada gos amb el seu propi baseline individual. Stack: ESP32-S3 + React Native + Fastify + Supabase + pipeline Python.",
   "requestFramePermissions": []
 }

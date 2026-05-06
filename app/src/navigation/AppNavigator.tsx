@@ -13,12 +13,14 @@ import HomeScreen    from '../screens/HomeScreen'
 import MetricsScreen from '../screens/MetricsScreen'
 import AlertsScreen  from '../screens/AlertsScreen'
 import DeviceScreen  from '../screens/DeviceScreen'
+import EnergyScreen  from '../screens/EnergyScreen'
 
 const Tab = createBottomTabNavigator()
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
     Inici:      '🏠',
+    Energia:    '⚡',
     Mètriques:  '📊',
     Alertes:    '🔔',
     Dispositiu: '📡',
@@ -74,6 +76,14 @@ export function AppNavigator() {
           options={{
             title: 'Ernest',
             tabBarIcon: ({ focused }) => <TabIcon name="Inici" focused={focused} />,
+          }}
+        />
+        <Tab.Screen
+          name="Energia"
+          component={EnergyScreen}
+          options={{
+            title: 'Energia',
+            tabBarIcon: ({ focused }) => <TabIcon name="Energia" focused={focused} />,
           }}
         />
         <Tab.Screen
