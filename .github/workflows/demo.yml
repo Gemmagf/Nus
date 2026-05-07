@@ -1,25 +1,19 @@
 # ============================================================
 # .github/workflows/demo.yml
 # Ernest — Deploy demo pública a GitHub Pages
-#
-# URL resultant: https://gemmagf.github.io/Nus/
-#
-# No necessita Supabase ni cap secret — el dashboard detecta
-# automàticament que no hi ha VITE_SUPABASE_URL i mostra
-# dades simulades realistes (mode DEMO).
+# URL: https://gemmagf.github.io/Nus/
 # ============================================================
-name: Demo → GitHub Pages
+name: Demo GitHub Pages
 
 on:
   push:
-    branches: [main, claude/nervous-haslett]
-  workflow_dispatch:   # permet llançar-lo manualment des de GitHub
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents:      read
-  pages:         write
-  id-token:      write
-  administration: write   # necessari per activar Pages automàticament
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -27,7 +21,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    name: Build demo i deploy a Pages
+    name: Build i deploy
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -44,22 +38,19 @@ jobs:
       - name: Instal·la dependències
         run: npm ci
 
-      - name: Build (mode demo — sense Supabase)
+      - name: Build demo (sense Supabase = mode demo automàtic)
         run: npm run build
         env:
-          # Sense VITE_SUPABASE_URL → IS_DEMO = true → dades simulades
           VITE_BASE_PATH: /Nus/
 
-      - name: Configura GitHub Pages
+      - name: Configura Pages
         uses: actions/configure-pages@v4
-        with:
-          enablement: true   # activa Pages automàticament si no està habilitat
 
       - name: Puja artefacte
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
 
-      - name: Deploy a GitHub Pages
+      - name: Deploy
         id: deploy
         uses: actions/deploy-pages@v4
