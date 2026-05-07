@@ -11,9 +11,12 @@ import {
   Zap, Brain, Bluetooth, MousePointer2, LayoutDashboard, ChevronLeft
 } from 'lucide-react';
 
+// En GitHub Pages (sense VITE_SUPABASE_URL) mostrem el dashboard directament
+const IS_DEMO = !import.meta.env.VITE_SUPABASE_URL
+
 const App: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [showRealDashboard, setShowRealDashboard] = useState(false);
+  const [showRealDashboard, setShowRealDashboard] = useState(IS_DEMO);
 
   const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
   const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
